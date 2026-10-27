@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apex Fit | حاسبة السعرات والدهون والتمارين</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f4;--card:#fff;--ink:#14231c;--mute:#5b6b63;--line:#d9e2dd;--accent:#0f7a55;--accent-ink:#fff;--soft:#e4f1ea;--warn:#a4570b;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1713;--card:#17221c;--ink:#e8f0eb;--mute:#9db0a6;--line:#2a3a31;--accent:#3fd49b;--accent-ink:#06261a;--soft:#1c2d25;--warn:#f0a85a}}
+:root[data-theme="dark"]{--bg:#0f1713;--card:#17221c;--ink:#e8f0eb;--mute:#9db0a6;--line:#2a3a31;--accent:#3fd49b;--accent-ink:#06261a;--soft:#1c2d25;--warn:#f0a85a}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Cairo',Tahoma,Arial,sans-serif;line-height:1.7}
+main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.7rem;font-weight:800;margin:8px 0 4px}
+.sub{color:var(--mute);margin:0 0 20px}
+.brand{display:flex;align-items:center;gap:12px;margin:4px 0 6px}.brand svg{width:58px;height:58px;flex:none}.brand h1{margin:0;letter-spacing:.5px;direction:ltr}.brand h1 span{font-weight:400;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-weight:600;font-size:.9rem;margin-bottom:4px}
+input,select{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.full{grid-column:1/-1}
+button{font:inherit;font-weight:800;width:100%;margin-top:14px;padding:12px;border:0;border-radius:10px;background:var(--accent);color:var(--accent-ink);cursor:pointer}
+#err{color:var(--warn);margin:10px 0 0;min-height:1.4em}
+#out{display:none}
+.big{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.big b{font-size:3rem;font-weight:800;color:var(--accent);line-height:1.1}
+.big span{color:var(--mute)}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.stat{background:var(--soft);border-radius:10px;padding:10px 12px}
+.stat small{display:block;color:var(--mute)}
+.stat strong{font-size:1.15rem}
+h2{font-size:1.15rem;margin:0 0 8px}
+ul{margin:0;padding-inline-start:20px}
+li{margin-bottom:4px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:start;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.tw{overflow-x:auto}
+.note{color:var(--mute);font-size:.85rem}
+.credit{text-align:center;font-weight:600;color:var(--mute);margin:24px 0 0}
+.credit strong{color:var(--accent)}
+.badge{display:inline-block;background:var(--accent);color:var(--accent-ink);font-weight:800;font-size:.75rem;padding:2px 10px;border-radius:99px;margin-bottom:6px}
+.price{font-size:1.4rem;font-weight:800;color:var(--accent);margin:10px 0}
+.btn{display:block;text-align:center;text-decoration:none;font-weight:800;padding:12px;border-radius:10px;background:var(--accent);color:var(--accent-ink)}
+.row{display:flex;gap:8px;margin-top:6px}.row button{width:auto;margin:0;padding:10px 18px}
+.meal{border-bottom:1px solid var(--line);padding:10px 0}.meal:last-child{border:0}
+.meal h3{margin:0;font-size:1rem}.meal small{color:var(--mute)}
+.day{background:var(--soft);border-radius:10px;padding:10px 12px;margin-bottom:8px}.day h3{margin:0 0 4px;font-size:1rem}
+.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+svg.chart{width:100%;height:auto;display:block;margin-top:10px}
+.msg{padding:8px 12px;border-radius:10px;margin:6px 0;white-space:pre-wrap}.msg.u{background:var(--soft)}.msg.a{border:1px solid var(--line)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.chips button{width:auto;margin:0;padding:6px 12px;font-weight:600;font-size:.85rem}
+</style>
+</head>
+<body>
+<main>
+<div class="brand"><svg viewBox="0 0 120 120" role="img" aria-label="Apex Fit"><rect width="120" height="120" rx="28" fill="#0f7a55"/><path d="M24 98 L60 24 L96 98" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><line x1="25" y1="72" x2="95" y2="72" stroke="#7ff0c2" stroke-width="7" stroke-linecap="round"/><rect x="15" y="59" width="9" height="26" rx="3.5" fill="#7ff0c2"/><rect x="96" y="59" width="9" height="26" rx="3.5" fill="#7ff0c2"/></svg><h1>APEX<span> FIT</span></h1></div>
+<p class="sub">اكتب الطول والوزن وباقي البيانات، وهتطلع لك نسبة الدهون التقريبية والسعرات اللي محتاجها وخطة تمارين.</p>
+
+<section class="card">
+<div class="grid">
+<div><label for="sex">النوع</label><select id="sex"><option value="m">ذكر</option><option value="f">أنثى</option></select></div>
+<div><label for="age">السن</label><input id="age" type="number" inputmode="numeric" min="15" max="90" placeholder="30"></div>
+<div><label for="h">الطول (سم)</label><input id="h" type="number" inputmode="decimal" min="120" max="220" placeholder="175"></div>
+<div><label for="w">الوزن (كجم)</label><input id="w" type="number" inputmode="decimal" min="35" max="250" placeholder="85"></div>
+<div class="full"><label for="act">مستوى النشاط اليومي</label>
+<select id="act">
+<option value="1.2">قليل (شغل مكتبي، مفيش رياضة)</option>
+<option value="1.375" selected>خفيف (رياضة 1 إلى 3 أيام في الأسبوع)</option>
+<option value="1.55">متوسط (رياضة 3 إلى 5 أيام)</option>
+<option value="1.725">عالي (رياضة 6 إلى 7 أيام)</option>
+</select></div>
+<div class="full"><label for="goal">الهدف</label>
+<select id="goal"><option value="lose">تنزيل دهون</option><option value="keep">ثبات الوزن</option><option value="gain">زيادة عضلات ووزن</option></select></div>
+</div>
+<button id="go" type="button">احسب</button>
+<p id="err" role="alert"></p>
+</section>
+
+<div id="out">
+<section class="card">
+<h2>نسبة الدهون التقريبية</h2>
+<div class="big"><b id="bf"></b><span id="bfcat"></span></div>
+<div class="stats">
+<div class="stat"><small>مؤشر كتلة الجسم</small><strong id="bmi"></strong></div>
+<div class="stat"><small>كمية الدهون</small><strong id="fm"></strong></div>
+<div class="stat"><small>الكتلة بدون دهون</small><strong id="lm"></strong></div>
+<div class="stat"><small>الوزن المثالي (تقريبي)</small><strong id="ideal"></strong></div>
+</div>
+</section>
+
+<section class="card">
+<h2>السعرات اليومية</h2>
+<div class="big"><b id="target"></b><span>سعر حراري في اليوم (هدفك)</span></div>
+<div class="stats">
+<div class="stat"><small>الحرق الأساسي (BMR)</small><strong id="bmr"></strong></div>
+<div class="stat"><small>الحرق الكلي مع النشاط</small><strong id="tdee"></strong></div>
+<div class="stat"><small>بروتين</small><strong id="pro"></strong></div>
+<div class="stat"><small>كربوهيدرات / دهون</small><strong id="cf"></strong></div>
+</div>
+<p class="note" id="eta"></p>
+</section>
+
+<section class="card">
+<h2>التمارين المقترحة</h2>
+<div class="tw"><table><tbody id="plan"></tbody></table></div>
+<ul id="tips" style="margin-top:12px"></ul>
+</section>
+
+<section class="card" id="paywall">
+<span class="badge">PRO</span>
+<h2>افتح الخطة المتقدمة</h2>
+<ul><li>خطة أكل يومية مفصلة: وجبات وسعرات وبروتين لكل وجبة</li><li>جداول تمارين بالتفصيل: التمرين والعدد والتكرار</li><li>تتبع تقدمك بالوزن والوسط مع رسم بياني</li></ul>
+<p class="price">99 جنيه في الشهر</p>
+<a id="sub" class="btn" href="#" target="_blank" rel="noopener">اشترك الآن</a>
+<label for="code" style="margin-top:14px">عندك كود تفعيل؟</label>
+<div class="row"><input id="code" placeholder="اكتب الكود" autocomplete="off"><button id="act2" type="button">فعّل</button></div>
+<p id="codeErr" role="alert" class="note"></p>
+</section>
+<div id="premium" style="display:none">
+<section class="card"><span class="badge">PRO</span><h2>خطة الأكل اليومية</h2><div id="meals"></div><p class="note">الأرقام لكل وجبة تقريبية. اختار أي بديل من الوجبة، وزوّد أو قلّل الرز والعيش عشان توصل لعدد السعرات.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>جدول التمارين التفصيلي</h2><div id="wk"></div><p class="note">لما توصل لأعلى عدد تكرارات في كل المجموعات، زوّد الوزن شوية في التمرينة الجاية.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>تتبع التقدم</h2>
+<div class="grid"><div><label for="lw">وزنك النهاردة (كجم)</label><input id="lw" type="number" inputmode="decimal" step="0.1"></div><div><label for="lwa">محيط الوسط (سم، اختياري)</label><input id="lwa" type="number" inputmode="decimal" step="0.5"></div></div>
+<button id="addlog" type="button">سجّل</button>
+<div id="chart"></div><div class="tw"><table><tbody id="logt"></tbody></table></div>
+<button id="dellog" type="button" class="ghost">امسح آخر تسجيل</button>
+<p class="note">البيانات بتتحفظ على جهازك انت بس.</p></section>
+<section class="card" id="aicard"><span class="badge">PRO</span><h2>مساعدك الذكي</h2>
+<p class="note" style="margin-top:0">اسأل عن أكلك وتمارينك وهيجاوبك حسب بياناتك اللي حسبناها.</p>
+<div class="chips"><button type="button" class="ghost" data-q="اقترح لي بدائل للرز والعيش بسعرات أقل">بدائل للرز والعيش</button><button type="button" class="ghost" data-q="إزاي أبدأ التمرين لو أنا مبتمرنش من فترة؟">أبدأ إزاي؟</button><button type="button" class="ghost" data-q="الوزن وقف ومبقاش ينزل، أعمل إيه؟">الوزن وقف</button></div>
+<div id="msgs" aria-live="polite"></div>
+<div class="row"><input id="q" placeholder="اكتب سؤالك..." autocomplete="off"><button id="ask" type="button">اسأل</button></div>
+<p class="note">إجابات عامة مش بديل للدكتور أو أخصائي التغذية.</p></section>
+</div>
+<p class="note">الأرقام تقديرية: نسبة الدهون محسوبة من الطول والوزن والسن والنوع، فممكن تختلف عن القياس الحقيقي (جهاز InBody أو قياس طيات الجلد). مش بديل لاستشارة دكتور أو أخصائي تغذية، خصوصًا لو عندك مرض مزمن أو بتاخد أدوية.</p>
+</div>
+<p class="credit">من شركة <strong>Apex</strong> • اتعمل بواسطة <strong>محمود رشدي</strong></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const n=(x,d=0)=>Number(x).toLocaleString('ar-EG',{maximumFractionDigits:d,minimumFractionDigits:d});
+function cat(bf,m){
+  const r=m?[[6,'دهون أساسية'],[14,'رياضي'],[18,'لياقة جيدة'],[25,'متوسط'],[100,'مرتفع']]:[[14,'دهون أساسية'],[21,'رياضية'],[25,'لياقة جيدة'],[32,'متوسط'],[100,'مرتفع']];
+  return r.find(x=>bf<x[0])[1];
+}
+const PAY_URL='';/* حط هنا رابط الدفع بتاعك */
+const CODE='PRO-2026';/* كود تجريبي، غيّره */
+let S=null;
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const isPro=()=>ls.get('fc_pro')==='1';
+const MEALS=[['الفطار',.25,'فول بزيت قليل + بيضتين مسلوقين + نص رغيف بلدي','أو: زبادي + شوفان + موزة + ملعقة زبدة فول سوداني'],['الغدا',.35,'صدور فراخ مشوية + رز أو مكرونة + خضار سوتيه + سلطة','أو: سمك مشوي + بطاطس مسلوقة + سلطة'],['سناك',.12,'زبادي يوناني + حبة فاكهة + حفنة مكسرات','أو: تونة + عيش + خيار'],['العشا',.28,'جبنة قريش + خيار وطماطم + رغيف بلدي صغير','أو: عدس أو شوربة خضار + بيضتين']];
+const J={
+ A:['سكوات 3×12','ضغط صدر دمبل 3×10','تجديف دمبل 3×12','بلانك 3×30 ثانية'],
+ B:['رومانيان ديدليفت 3×10','ضغط كتف 3×10','سحب أمامي 3×12','لانجز 3×10 لكل رجل'],
+ C:['ليج بريس 3×12','ضغط صدر مائل 3×10','تجديف كابل 3×12','رفع رجل للبطن 3×12'],
+ H:['إحماء 5 دقائق','HIIT: 30 ثانية سريع + 60 ثانية بطيء × 10 جولات','مشي هادي 10 دقائق'],
+ W:['مشي سريع 40 إلى 60 دقيقة'],
+ PU:['بنش برس 4×8','ضغط كتف 3×10','ضغط مائل دمبل 3×10','رفرفة جانبي 3×15','تراي كابل 3×12'],
+ PL:['سحب أمامي 4×10','تجديف بار 4×8','سحب وجه 3×15','باي دمبل 3×10','باي مطرقة 3×12'],
+ LG:['سكوات 4×8','ليج بريس 3×12','رومانيان 3×10','سمانة 4×15','بلانك 3×45 ثانية']};
+const WK={
+ lose:[['السبت','مقاومة A',J.A],['الأحد','مشي',J.W],['الاثنين','مقاومة B',J.B],['الأربعاء','مقاومة C',J.C],['الخميس','كارديو متقطع',J.H]],
+ keep:[['السبت','مقاومة A',J.A],['الأحد','كارديو متوسط 30 دقيقة',['جري خفيف أو عجلة أو سباحة']],['الاثنين','مقاومة B',J.B],['الأربعاء','مقاومة C',J.C],['الخميس','رياضة بتحبها 30 دقيقة',['كورة، سباحة، أو مشي سريع']]],
+ gain:[['السبت','دفع',J.PU],['الأحد','سحب',J.PL],['الاثنين','رجل',J.LG],['الأربعاء','دفع',J.PU],['الخميس','سحب',J.PL]]};
+function renderPro(){
+ const p=isPro();
+ $('paywall').style.display=p?'none':'block';
+ $('premium').style.display=p?'block':'none';
+ if(!p||!S)return;
+ $('meals').innerHTML=MEALS.map(m=>{const k=Math.round(S.target*m[1]/10)*10;return '<div class="meal"><h3>'+m[0]+' <small>'+n(k)+' سعر، بروتين '+n(S.p*m[1])+' جم، كارب '+n(S.c*m[1])+' جم، دهون '+n(S.f*m[1])+' جم</small></h3><div>'+m[2]+'</div><small>'+m[3]+'</small></div>'}).join('');
+ $('wk').innerHTML=WK[S.goal].map(d=>'<div class="day"><h3>'+d[0]+': '+d[1]+'</h3><ul>'+d[2].map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');
+ renderLog();
+}
+function getLog(){try{return JSON.parse(ls.get('fc_log')||'[]')}catch(e){return[]}}
+function renderLog(){
+ const L=getLog();
+ if(L.length>=2){
+  const W=320,H=140,pd=24,ws=L.map(x=>x.w),mn=Math.min(...ws)-1,mx=Math.max(...ws)+1;
+  const X=i=>pd+i*(W-2*pd)/(L.length-1),Y=v=>H-pd-(v-mn)*(H-2*pd)/(mx-mn);
+  $('chart').innerHTML='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="رسم بياني للوزن"><polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="'+L.map((x,i)=>X(i)+','+Y(x.w)).join(' ')+'"/>'+L.map((x,i)=>'<circle cx="'+X(i)+'" cy="'+Y(x.w)+'" r="3.5" fill="var(--accent)"/>').join('')+'<text x="4" y="14" font-size="11" fill="var(--mute)">'+mx.toFixed(0)+'</text><text x="4" y="'+(H-6)+'" font-size="11" fill="var(--mute)">'+mn.toFixed(0)+'</text></svg>';
+ }else $('chart').innerHTML='<p class="note">سجّل مرتين على الأقل عشان يظهر الرسم البياني.</p>';
+ $('logt').innerHTML=L.slice(-8).reverse().map(x=>{const d=x.w-L[0].w;return '<tr><th scope="row">'+x.d+'</th><td>'+n(x.w,1)+' كجم</td><td>'+(x.a?n(x.a,1)+' سم':'-')+'</td><td>'+(d>0?'+':'')+n(d,1)+'</td></tr>'}).join('');
+}
+let chat=[],busy=false,aiOk=null;
+async function getAI(){if(aiOk!==null)return aiOk||null;try{aiOk=window.claude?await claude.use('sample'):false}catch(e){aiOk=false}return aiOk||null}
+function ctxText(){const s=S;return 'أنت مساعد لياقة وتغذية داخل تطبيق. اتكلم بالعامية المصرية البسيطة بإجابات قصيرة وعملية (أكثر شيء 5 أسطر إلا لو طلبوا شرح أكتر). بيانات المستخدم: '+(s.m?'ذكر':'أنثى')+'، السن '+s.age+'، الطول '+s.h+' سم، الوزن '+s.w+' كجم، نسبة الدهون التقريبية '+s.bf.toFixed(1)+'٪، هدفه '+({lose:'تنزيل دهون',keep:'ثبات الوزن',gain:'زيادة عضلات'}[s.goal])+'، سعراته اليومية '+s.target+' بروتين '+s.p+' جم كارب '+s.c+' جم دهون '+s.f+' جم. لا تعمل تشخيص طبي، ولو فيه أعراض أو مرض مزمن أو حمل انصحه بالدكتور. متنصحش بسعرات أقل من '+(s.m?1500:1200)+' في اليوم.'}
+async function askAI(q){
+ if(busy||!q||!S)return;
+ const ai=await getAI();
+ if(!ai){$('aicard').style.display='none';return}
+ busy=true;$('ask').disabled=true;
+ const box=$('msgs'),u=document.createElement('div');u.className='msg u';u.textContent=q;box.appendChild(u);
+ const a=document.createElement('div');a.className='msg a';a.textContent='جاري التفكير...';box.appendChild(a);
+ chat.push({role:'user',content:q});chat=chat.slice(-6);
+ if(chat[0].role!=='user')chat.shift();
+ const input=chat.map((m,i)=>i===0?{role:'user',content:ctxText()+'\n\nسؤال المستخدم: '+m.content}:m);
+ try{
+  const r=await ai(input,{cache:false,onText:e=>{a.textContent=e.text}});
+  a.textContent=r.text;chat.push({role:'assistant',content:r.text});
+ }catch(e){
+  chat.pop();
+  a.textContent=e&&e.code==='rate_limited'?'استنى شوية وجرب تاني.':e&&e.code==='not_granted'?'لازم توافق على استخدام المساعد عشان يشتغل.':'حصلت مشكلة، جرب تاني.';
+ }
+ busy=false;$('ask').disabled=false;$('q').value='';
+}
+$('ask').onclick=()=>askAI($('q').value.trim());
+$('q').onkeydown=e=>{if(e.key==='Enter')askAI($('q').value.trim())};
+document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>askAI(b.dataset.q));
+$('act2').onclick=()=>{if($('code').value.trim().toUpperCase()===CODE){ls.set('fc_pro','1');$('codeErr').textContent='';renderPro()}else $('codeErr').textContent='الكود غلط، راجعه وجرب تاني.'};
+$('sub').onclick=e=>{if(PAY_URL){$('sub').href=PAY_URL}else{e.preventDefault();$('codeErr').textContent='رابط الاشتراك لسه متضافش.'}};
+$('addlog').onclick=()=>{
+ const w=+$('lw').value,a=+$('lwa').value||0;if(!w||w<35||w>250)return;
+ const d=new Date().toISOString().slice(0,10),L=getLog().filter(x=>x.d!==d);L.push({d,w,a});L.sort((x,y)=>x.d<y.d?-1:1);
+ ls.set('fc_log',JSON.stringify(L));$('lw').value='';$('lwa').value='';renderLog();
+};
+$('dellog').onclick=()=>{const L=getLog();L.pop();ls.set('fc_log',JSON.stringify(L));renderLog()};
+$('go').onclick=()=>{
+  const m=$('sex').value==='m',age=+$('age').value,h=+$('h').value,w=+$('w').value,act=+$('act').value,goal=$('goal').value;
+  if(!age||!h||!w||age<15||age>90||h<120||h>220||w<35||w>250){$('err').textContent='راجع الأرقام: السن من 15 لـ 90، الطول من 120 لـ 220 سم، الوزن من 35 لـ 250 كجم.';return}
+  $('err').textContent='';
+  const bmi=w/((h/100)**2);
+  let bf=1.2*bmi+0.23*age-10.8*(m?1:0)-5.4;
+  bf=Math.max(m?4:10,Math.min(60,bf));
+  const fm=w*bf/100,lm=w-fm;
+  const bmr=10*w+6.25*h-5*age+(m?5:-161),tdee=bmr*act;
+  let target=goal==='lose'?tdee-500:goal==='gain'?tdee+300:tdee;
+  const floor=m?1500:1200;
+  let capped=false;
+  if(target<floor){target=floor;capped=true}
+  target=Math.round(target/10)*10;
+  const pro=Math.round(w*(goal==='lose'?2:goal==='gain'?1.8:1.6));
+  const fat=Math.round(target*0.27/9);
+  const carb=Math.max(0,Math.round((target-pro*4-fat*9)/4));
+  const idLo=18.5*(h/100)**2,idHi=24.9*(h/100)**2;
+  $('bf').textContent=n(bf,1)+'٪';$('bfcat').textContent=cat(bf,m);
+  $('bmi').textContent=n(bmi,1);$('fm').textContent=n(fm,1)+' كجم';$('lm').textContent=n(lm,1)+' كجم';
+  $('ideal').textContent=n(idLo)+' إلى '+n(idHi)+' كجم';
+  $('target').textContent=n(target);$('bmr').textContent=n(bmr);$('tdee').textContent=n(tdee);
+  $('pro').textContent=n(pro)+' جم';$('cf').textContent=n(carb)+' / '+n(fat)+' جم';
+  let eta='';
+  if(goal==='lose'){const wk=Math.max(0.2,(tdee-target)*7/7700);eta='النزول المتوقع حوالي '+n(wk,1)+' كجم في الأسبوع. نزول من 0.5 لـ 1 كجم أسبوعيًا آمن ومستدام.'+(capped?' السعرات اتحددت عند حد أدنى آمن، فمتنزلش عنه من غير متابعة طبية.':'')}
+  else if(goal==='gain'){eta='الزيادة المتوقعة حوالي 0.25 كجم في الأسبوع، وده معدل مناسب لزيادة عضلات أكتر من الدهون.'}
+  else eta='السعرات دي هتحافظ على وزنك الحالي تقريبًا.';
+  $('eta').textContent=eta;
+  const P={
+   lose:[['السبت','تمارين مقاومة: جسم كامل، 45 دقيقة'],['الأحد','مشي سريع أو كارديو خفيف، 40 إلى 60 دقيقة'],['الاثنين','تمارين مقاومة: جسم كامل، 45 دقيقة'],['الثلاثاء','راحة أو مشي خفيف'],['الأربعاء','تمارين مقاومة: جسم كامل، 45 دقيقة'],['الخميس','كارديو متقطع (HIIT) 20 دقيقة + مشي'],['الجمعة','راحة']],
+   keep:[['السبت','مقاومة: جزء علوي، 45 دقيقة'],['الأحد','كارديو متوسط، 30 دقيقة'],['الاثنين','مقاومة: جزء سفلي، 45 دقيقة'],['الثلاثاء','راحة'],['الأربعاء','مقاومة: جسم كامل، 45 دقيقة'],['الخميس','كارديو أو رياضة بتحبها، 30 دقيقة'],['الجمعة','راحة']],
+   gain:[['السبت','دفع: صدر وكتف وتراي'],['الأحد','سحب: ظهر وباي'],['الاثنين','رجل وبطن'],['الثلاثاء','راحة'],['الأربعاء','دفع: صدر وكتف وتراي'],['الخميس','سحب: ظهر وباي + رجل خفيف'],['الجمعة','راحة أو مشي خفيف']]
+  }[goal];
+  $('plan').innerHTML=P.map(r=>'<tr><th scope="row">'+r[0]+'</th><td>'+r[1]+'</td></tr>').join('');
+  const tips=['ابدأ كل تمرين بإحماء 5 دقائق، وزوّد الأوزان أو التكرارات تدريجيًا كل أسبوع.','اشرب مية كفاية ونام من 7 إلى 9 ساعات، النوم بيأثر على الدهون والعضلات.'];
+  if(bmi>=30||age>50)tips.unshift('لو مبتتمرنش من فترة طويلة أو عندك مشاكل في القلب أو المفاصل، استشر دكتور قبل ما تبدأ، وابدأ بالمشي.');
+  $('tips').innerHTML=tips.map(t=>'<li>'+t+'</li>').join('');
+  S={target,p:pro,c:carb,f:fat,goal,m,age,h,w,bf};chat=[];$('msgs').innerHTML='';renderPro();
+  $('out').style.display='block';
+  $('out').scrollIntoView({behavior:'smooth',block:'start'});
+};
+</script>
+</body>
+</html>
