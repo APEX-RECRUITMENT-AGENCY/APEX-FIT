@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Apex Fit | حاسبة السعرات والدهون والتمارين</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
 :root{--bg:#f3f6f4;--card:#fff;--ink:#14231c;--mute:#5b6b63;--line:#d9e2dd;--accent:#0f7a55;--accent-ink:#fff;--soft:#e4f1ea;--warn:#a4570b;
 box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -51,6 +53,12 @@ th,td{text-align:start;padding:8px 6px;border-bottom:1px solid var(--line);verti
 .day{background:var(--soft);border-radius:10px;padding:10px 12px;margin-bottom:8px}.day h3{margin:0 0 4px;font-size:1rem}
 .ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
 svg.chart{width:100%;height:auto;display:block;margin-top:10px}
+.authrow{display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px}.authrow span{color:var(--mute);font-size:.9rem;direction:ltr;overflow:hidden;text-overflow:ellipsis}.authrow button{width:auto;margin:0;padding:6px 16px}
+#authcard button{margin-top:10px}
+.chg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
+.tile{width:auto;margin:0;padding:8px 0;background:var(--soft);color:var(--ink);font-weight:800;line-height:1.2;border:1px solid var(--line)}
+.tile small{display:block;font-weight:400;font-size:.68rem;color:var(--mute)}
+.tile.rest{opacity:.6}.tile.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);opacity:1}.tile.on small{color:var(--accent-ink)}
 .msg{padding:8px 12px;border-radius:10px;margin:6px 0;white-space:pre-wrap}.msg.u{background:var(--soft)}.msg.a{border:1px solid var(--line)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.chips button{width:auto;margin:0;padding:6px 12px;font-weight:600;font-size:.85rem}
 </style>
@@ -59,6 +67,15 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 <main>
 <div class="brand"><svg viewBox="0 0 120 120" role="img" aria-label="Apex Fit"><rect width="120" height="120" rx="28" fill="#0f7a55"/><path d="M24 98 L60 24 L96 98" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><line x1="25" y1="72" x2="95" y2="72" stroke="#7ff0c2" stroke-width="7" stroke-linecap="round"/><rect x="15" y="59" width="9" height="26" rx="3.5" fill="#7ff0c2"/><rect x="96" y="59" width="9" height="26" rx="3.5" fill="#7ff0c2"/></svg><h1>APEX<span> FIT</span></h1></div>
 <p class="sub">اكتب الطول والوزن وباقي البيانات، وهتطلع لك نسبة الدهون التقريبية والسعرات اللي محتاجها وخطة تمارين.</p>
+<div class="authrow" id="authrow"><span id="who"></span><button id="authbtn" type="button" class="ghost">تسجيل الدخول</button></div>
+<section class="card" id="authcard" style="display:none">
+<h2>تسجيل الدخول</h2>
+<div class="grid"><div><label for="em">الإيميل</label><input id="em" type="email" dir="ltr" autocomplete="email"></div><div><label for="pw">الباسورد</label><input id="pw" type="password" dir="ltr" autocomplete="current-password"></div></div>
+<button id="signin" type="button">دخول</button>
+<button id="signup" type="button" class="ghost">إنشاء حساب جديد</button>
+<button id="google" type="button" class="ghost">الدخول بحساب Google</button>
+<p id="autherr" role="alert" class="note"></p>
+</section>
 
 <section class="card">
 <div class="grid">
@@ -113,7 +130,7 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 <section class="card" id="paywall">
 <span class="badge">PRO</span>
 <h2>افتح الخطة المتقدمة</h2>
-<ul><li>خطة أكل يومية مفصلة: وجبات وسعرات وبروتين لكل وجبة</li><li>جداول تمارين بالتفصيل: التمرين والعدد والتكرار</li><li>تتبع تقدمك بالوزن والوسط مع رسم بياني</li></ul>
+<ul><li>خطة أكل يومية مفصلة: وجبات وسعرات وبروتين لكل وجبة</li><li>جداول تمارين بالتفصيل: التمرين والعدد والتكرار</li><li>تتبع تقدمك بالوزن والوسط مع رسم بياني</li><li>كاليسثنكس وبيت وجيم، 3 مستويات، و4 أشكال جسم</li><li>تحدي 30 يوم وقائمة مشتريات وتذكير بالتمرين</li></ul>
 <p class="price">99 جنيه في الشهر</p>
 <a id="sub" class="btn" href="#" target="_blank" rel="noopener">اشترك الآن</a>
 <label for="code" style="margin-top:14px">عندك كود تفعيل؟</label>
@@ -122,7 +139,25 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 </section>
 <div id="premium" style="display:none">
 <section class="card"><span class="badge">PRO</span><h2>خطة الأكل اليومية</h2><div id="meals"></div><p class="note">الأرقام لكل وجبة تقريبية. اختار أي بديل من الوجبة، وزوّد أو قلّل الرز والعيش عشان توصل لعدد السعرات.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>اختار نظامك</h2>
+<div class="grid">
+<div><label for="stl">نوع التمرين</label><select id="stl"><option value="cali">كاليسثنكس (وزن الجسم)</option><option value="home">بيت (دمبل وأدوات بسيطة)</option><option value="gym">جيم</option></select></div>
+<div><label for="lvl">المستوى</label><select id="lvl"><option value="beg">مبتدئ</option><option value="int">متوسط</option><option value="adv">متقدم</option></select></div>
+<div class="full"><label for="shp">شكل الجسم</label><select id="shp"><option value="ath">عضلي رياضي</option><option value="ton">نحيف مشدود (Toned)</option><option value="bulk">ضخم (Bulk)</option><option value="lithe">رشيق وقوي للسيدات</option></select></div>
+</div><p id="shnote" class="note"></p></section>
 <section class="card"><span class="badge">PRO</span><h2>جدول التمارين التفصيلي</h2><div id="wk"></div><p class="note">لما توصل لأعلى عدد تكرارات في كل المجموعات، زوّد الوزن شوية في التمرينة الجاية.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>تحدي 30 يوم</h2>
+<p class="note" style="margin-top:0" id="chcount"></p>
+<div class="chg" id="chgrid"></div>
+<ul style="margin-top:12px"><li>الأسبوع الأول: اتعلم التكنيك بوزن خفيف.</li><li>الأسبوع التاني: زوّد تكرارتين في كل مجموعة.</li><li>الأسبوع التالت: زوّد مجموعة أو وزن.</li><li>الأسبوع الرابع: اختبر نفسك، ويوم زيادة راحة لو تعبت.</li></ul>
+<p class="note">اضغط على اليوم لما تخلّصه.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>قائمة المشتريات الأسبوعية</h2>
+<div class="tw"><table><tbody id="shop"></tbody></table></div>
+<p class="note">كميات تقريبية لأسبوع حسب سعراتك وماكروزك.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>تذكير بالتمرين</h2>
+<label for="rt">وقت التمرين</label><input id="rt" type="time" value="18:00">
+<button id="rtbtn" type="button">نزّل التذكير للتقويم</button>
+<p class="note">بيتفتح في تقويم الموبايل ويتكرر في أيام تمرينك مع تنبيه قبلها بـ 10 دقايق.</p></section>
 <section class="card"><span class="badge">PRO</span><h2>تتبع التقدم</h2>
 <div class="grid"><div><label for="lw">وزنك النهاردة (كجم)</label><input id="lw" type="number" inputmode="decimal" step="0.1"></div><div><label for="lwa">محيط الوسط (سم، اختياري)</label><input id="lwa" type="number" inputmode="decimal" step="0.5"></div></div>
 <button id="addlog" type="button">سجّل</button>
@@ -173,8 +208,58 @@ function renderPro(){
  if(!p||!S)return;
  $('meals').innerHTML=MEALS.map(m=>{const k=Math.round(S.target*m[1]/10)*10;return '<div class="meal"><h3>'+m[0]+' <small>'+n(k)+' سعر، بروتين '+n(S.p*m[1])+' جم، كارب '+n(S.c*m[1])+' جم، دهون '+n(S.f*m[1])+' جم</small></h3><div>'+m[2]+'</div><small>'+m[3]+'</small></div>'}).join('');
  $('wk').innerHTML=WK[S.goal].map(d=>'<div class="day"><h3>'+d[0]+': '+d[1]+'</h3><ul>'+d[2].map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');
- renderLog();
+ renderLog();renderExtra();
 }
+const EX={
+cali:{push:['ضغط على الركب أو مائل','ضغط عادي','ديبس على كرسي أو بارالل','ضغط دايموند','ضغط Pike للكتف','ضغط Archer'],pull:['تجديف تحت طاولة','سحب سلبي (Negative Pull-up)','Pull-up','Chin-up','Pull-up بتوقف 3 ثواني','تدريب Muscle-up'],legs:['سكوات بوزن الجسم','لانجز','سكوات بلغاري','Glute Bridge برجل واحدة','Shrimp Squat','Pistol Squat'],core:['~بلانك','رفع رجل','~Hollow Hold','~L-sit','Hanging Leg Raise','تدريب Dragon Flag']},
+home:{push:['ضغط','ضغط كتف دمبل','ضغط صدر دمبل على الأرض','ديبس كرسي','ضغط مائل','Arnold Press'],pull:['تجديف دمبل','تجديف دمبل برجل واحدة','Reverse Fly دمبل','باي دمبل','Pull-up على بار الباب','سحب بفوطة على الباب'],legs:['Goblet Squat','Glute Bridge','لانجز دمبل','رومانيان دمبل','سكوات بلغاري دمبل','Step-up على كرسي'],core:['~بلانك','Dead Bug','رفع رجل','Russian Twist','~Side Plank','Mountain Climbers']},
+gym:{push:['ضغط صدر ماشين','بنش برس','ضغط كتف','ضغط مائل دمبل','رفرفة جانبي','تراي كابل'],pull:['سحب أمامي','تجديف كابل','تجديف بار','سحب وجه','باي بار','باي مطرقة'],legs:['ليج بريس','سكوات','رومانيان ديدليفت','Leg Curl','لانجز','سمانة'],core:['~بلانك','كرانش كابل','رفع رجل','Ab Wheel','Pallof Press','Hanging Leg Raise']}};
+const FULL={t:'جسم كامل',g:[['push',1],['pull',1],['legs',2],['core',1]]},UP={t:'جزء علوي',g:[['push',2],['pull',2],['core',1]]},LO={t:'جزء سفلي',g:[['legs',3],['core',1]]},PU={t:'دفع',g:[['push',4],['core',1]]},PL={t:'سحب',g:[['pull',4],['core',1]]},LG={t:'رجل',g:[['legs',4],['core',1]]};
+const SC={beg:[['السبت',FULL],['الاثنين',FULL],['الأربعاء',FULL]],int:[['السبت',UP],['الأحد',LO],['الثلاثاء',UP],['الخميس',LO]],adv:[['السبت',PU],['الأحد',PL],['الاثنين',LG],['الأربعاء',PU],['الخميس',PL],['الجمعة',LG]]};
+const LV={beg:{sets:3,win:[0,3]},int:{sets:4,win:[1,5]},adv:{sets:4,win:[2,6]}};
+const SH={
+ath:{n:'عضلي رياضي',reps:'8-10',rest:'راحة دقيقتين بين المجموعات',delta:0,pro:2,tip:'قوة وعضلات متوازنة. ركّز على التمارين الأساسية وزوّد الحمل تدريجيًا.',add:['كارديو خفيف 15 دقيقة مرتين في الأسبوع']},
+ton:{n:'نحيف مشدود',reps:'12-15',rest:'راحة 45 ثانية بين المجموعات',delta:-300,pro:2,tip:'شد وتنشيف مع الحفاظ على العضلات. تكرارات أعلى وراحة أقصر.',add:['كارديو 20 دقيقة بعد التمرين 3 مرات في الأسبوع']},
+bulk:{n:'ضخم (Bulk)',reps:'6-10',rest:'راحة من 2 لـ 3 دقايق بين المجموعات',delta:400,pro:1.8,tip:'زيادة حجم وقوة. سعرات أعلى من حرقك وأوزان تقيلة بتكنيك سليم.',add:['مجموعة إضافية للعضلة اللي عايز تكبّرها في أي يوم']},
+lithe:{n:'رشيق وقوي للسيدات',reps:'10-15',rest:'راحة 60 ثانية بين المجموعات',delta:-200,pro:1.8,tip:'جسم مشدود وقوي مع تركيز على الرجل والأرداف والبطن.',add:['Hip Thrust أو Glute Bridge 4×12','رفع رجل جانبي 3×15 لكل رجل']}};
+function exLine(x,s,r){return x[0]==='~'?x.slice(1)+' '+s+'×30 ثانية':x+' '+s+'×'+r}
+function genPlan(st,lv,sh){
+ const L=LV[lv],reps=(st==='cali'&&lv==='adv')?'5-8':SH[sh].reps;
+ return SC[lv].map(d=>[d[0],d[1].t,d[1].g.flatMap(([g,k])=>EX[st][g].slice(L.win[0],L.win[1]).slice(0,k).map(x=>exLine(x,g==='core'?3:L.sets,g==='core'?'15':reps)))]);
+}
+function cur(){
+ const h=SH[$('shp').value];if(!h||!S)return S;
+ const t=Math.max(S.m?1500:1200,Math.round((S.tdee+h.delta)/10)*10),p=Math.round(S.w*h.pro),f=Math.round(t*.27/9),c=Math.max(0,Math.round((t-p*4-f*9)/4));
+ return Object.assign({},S,{target:t,p,c,f});
+}
+function getCh(){try{return JSON.parse(ls.get('fc_ch')||'[]')}catch(e){return[]}}
+function renderCh(){
+ const pat={beg:'TRTRTRR',int:'TTRTRTR',adv:'TTTRTTT'}[$('lvl').value],d=getCh(),t=[];
+ for(let i=1;i<=30;i++){const w=pat[(i-1)%7]==='T',o=d.includes(i);t.push('<button type="button" class="tile'+(o?' on':'')+(w?'':' rest')+'" data-d="'+i+'" aria-pressed="'+o+'">'+n(i)+'<small>'+(w?'تمرين':'راحة')+'</small></button>')}
+ $('chgrid').innerHTML=t.join('');
+ $('chcount').textContent='خلّصت '+n(d.length)+' من 30 يوم';
+}
+function renderShop(C){
+ const r=(x,s)=>Math.round(x/s)*s,q=(v,u)=>n(v,v%1?1:0)+' '+u,p=C.p,c=C.c,f=C.f;
+ const it=[['فراخ أو لحمة أو سمك',q(r(p*7*.4/230,.5),'كجم')],['بيض',q(Math.round(p*7*.1/6),'بيضة')],['زبادي أو جبنة قريش أو لبن',q(r(p*7*.15/80,.5),'كجم')],['رز أو مكرونة أو شوفان (جاف)',q(r(c*7*.45/750,.25),'كجم')],['بطاطس أو بطاطا',q(r(c*7*.2/170,.5),'كجم')],['عيش بلدي',q(Math.round(c*7*.2/70),'رغيف')],['فول وعدس (جاف)','٠٫٥ كجم'],['خضار وسلطة','٣ كجم'],['فاكهة','٢ كجم'],['زيت زيتون',q(r(f*7*.4/.92,50),'مل')],['مكسرات','١٥٠ جم']];
+ $('shop').innerHTML=it.map(x=>'<tr><th scope="row">'+x[0]+'</th><td>'+x[1]+'</td></tr>').join('');
+}
+function renderExtra(){
+ if(!S)return;
+ const st=$('stl').value,lv=$('lvl').value,sh=$('shp').value,H=SH[sh],C=cur();
+ $('shnote').innerHTML='<b>'+H.n+':</b> '+H.tip+'<br>سعراتك لشكل الجسم ده: <b>'+n(C.target)+'</b> سعر، بروتين '+n(C.p)+' جم، كارب '+n(C.c)+' جم، دهون '+n(C.f)+' جم.';
+ $('meals').innerHTML=MEALS.map(m=>'<div class="meal"><h3>'+m[0]+' <small>'+n(Math.round(C.target*m[1]/10)*10)+' سعر، بروتين '+n(C.p*m[1])+' جم، كارب '+n(C.c*m[1])+' جم، دهون '+n(C.f*m[1])+' جم</small></h3><div>'+m[2]+'</div><small>'+m[3]+'</small></div>').join('');
+ $('wk').innerHTML=genPlan(st,lv,sh).map(d=>'<div class="day"><h3>'+d[0]+': '+d[1]+'</h3><ul>'+d[2].map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('')+'<ul><li>'+H.rest+'.</li>'+H.add.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+ renderCh();renderShop(C);
+}
+try{const pf=JSON.parse(ls.get('fc_pref')||'null');if(pf){$('stl').value=pf.s;$('lvl').value=pf.l;$('shp').value=pf.h}}catch(e){}
+['stl','lvl','shp'].forEach(id=>$(id).onchange=()=>{ls.set('fc_pref',JSON.stringify({s:$('stl').value,l:$('lvl').value,h:$('shp').value}));renderExtra()});
+$('chgrid').onclick=e=>{const b=e.target.closest('.tile');if(!b)return;const d=+b.dataset.d;let a=getCh();a=a.includes(d)?a.filter(x=>x!==d):a.concat(d);ls.set('fc_ch',JSON.stringify(a));renderCh()};
+$('rtbtn').onclick=()=>{
+ const days={beg:'SA,MO,WE',int:'SA,SU,TU,TH',adv:'SA,SU,MO,WE,TH,FR'}[$('lvl').value],tm=($('rt').value||'18:00').split(':'),d=new Date(),z=x=>String(x).padStart(2,'0'),ds=d.getFullYear()+z(d.getMonth()+1)+z(d.getDate());
+ const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Apex Fit//AR','BEGIN:VEVENT','UID:apexfit-'+Date.now()+'@apexfit','DTSTAMP:'+ds+'T000000Z','DTSTART:'+ds+'T'+tm[0]+tm[1]+'00','DURATION:PT45M','RRULE:FREQ=WEEKLY;BYDAY='+days,'SUMMARY:تمرين Apex Fit','BEGIN:VALARM','TRIGGER:-PT10M','ACTION:DISPLAY','DESCRIPTION:وقت التمرين','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download='apex-fit-reminder.ics';document.body.appendChild(a);a.click();a.remove();
+};
 function getLog(){try{return JSON.parse(ls.get('fc_log')||'[]')}catch(e){return[]}}
 function renderLog(){
  const L=getLog();
@@ -186,7 +271,19 @@ function renderLog(){
  $('logt').innerHTML=L.slice(-8).reverse().map(x=>{const d=x.w-L[0].w;return '<tr><th scope="row">'+x.d+'</th><td>'+n(x.w,1)+' كجم</td><td>'+(x.a?n(x.a,1)+' سم':'-')+'</td><td>'+(d>0?'+':'')+n(d,1)+'</td></tr>'}).join('');
 }
 let chat=[],busy=false,aiOk=null;
-async function getAI(){if(aiOk!==null)return aiOk||null;try{aiOk=window.claude?await claude.use('sample'):false}catch(e){aiOk=false}return aiOk||null}
+async function getAI(){
+ try{if(window.claude){const s=await claude.use('sample');if(s)return s}}catch(e){}
+ if(!AI_URL)return null;
+ return async(input,o)=>{
+  if(!user)throw{code:'login'};
+  const t=await user.getIdToken();
+  const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({messages:input})});
+  if(r.status===429)throw{code:'rate_limited'};
+  if(!r.ok)throw{code:'error'};
+  const d=await r.json();
+  return{text:d.text||''};
+ };
+}
 function ctxText(){const s=S;return 'أنت مساعد لياقة وتغذية داخل تطبيق. اتكلم بالعامية المصرية البسيطة بإجابات قصيرة وعملية (أكثر شيء 5 أسطر إلا لو طلبوا شرح أكتر). بيانات المستخدم: '+(s.m?'ذكر':'أنثى')+'، السن '+s.age+'، الطول '+s.h+' سم، الوزن '+s.w+' كجم، نسبة الدهون التقريبية '+s.bf.toFixed(1)+'٪، هدفه '+({lose:'تنزيل دهون',keep:'ثبات الوزن',gain:'زيادة عضلات'}[s.goal])+'، سعراته اليومية '+s.target+' بروتين '+s.p+' جم كارب '+s.c+' جم دهون '+s.f+' جم. لا تعمل تشخيص طبي، ولو فيه أعراض أو مرض مزمن أو حمل انصحه بالدكتور. متنصحش بسعرات أقل من '+(s.m?1500:1200)+' في اليوم.'}
 async function askAI(q){
  if(busy||!q||!S)return;
@@ -203,13 +300,37 @@ async function askAI(q){
   a.textContent=r.text;chat.push({role:'assistant',content:r.text});
  }catch(e){
   chat.pop();
-  a.textContent=e&&e.code==='rate_limited'?'استنى شوية وجرب تاني.':e&&e.code==='not_granted'?'لازم توافق على استخدام المساعد عشان يشتغل.':'حصلت مشكلة، جرب تاني.';
+  a.textContent=e&&e.code==='rate_limited'?'استنى شوية وجرب تاني.':e&&e.code==='login'?'سجّل دخول الأول من فوق عشان تستخدم المساعد.':e&&e.code==='not_granted'?'لازم توافق على استخدام المساعد عشان يشتغل.':'حصلت مشكلة، جرب تاني.';
  }
  busy=false;$('ask').disabled=false;$('q').value='';
 }
 $('ask').onclick=()=>askAI($('q').value.trim());
 $('q').onkeydown=e=>{if(e.key==='Enter')askAI($('q').value.trim())};
 document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>askAI(b.dataset.q));
+const FIREBASE_CONFIG={apiKey:'',authDomain:'',projectId:'',appId:''};/* انسخها من Firebase */
+const AI_URL='';/* رابط الـ Worker بعد ما تنشره */
+let user=null,au=null;
+const AE={'auth/invalid-credential':'الإيميل أو الباسورد غلط.','auth/wrong-password':'الإيميل أو الباسورد غلط.','auth/user-not-found':'مفيش حساب بالإيميل ده.','auth/email-already-in-use':'الإيميل ده مسجل قبل كده.','auth/weak-password':'الباسورد ضعيف، لازم 6 حروف أو أكتر.','auth/invalid-email':'الإيميل مش مكتوب صح.','auth/popup-closed-by-user':'اتقفلت نافذة الدخول.'};
+function uiAuth(){
+ $('authrow').style.display='flex';
+ $('who').textContent=user?(user.email||'مسجّل دخول'):'';
+ $('authbtn').textContent=user?'خروج':'تسجيل الدخول';
+ if(user)$('authcard').style.display='none';
+}
+async function doAuth(fn){
+ $('autherr').textContent='';
+ try{await fn()}catch(e){$('autherr').textContent=AE[e&&e.code]||'حصلت مشكلة، جرب تاني.'}
+}
+try{
+ if(window.firebase&&FIREBASE_CONFIG.apiKey){
+  firebase.initializeApp(FIREBASE_CONFIG);au=firebase.auth();
+  au.onAuthStateChanged(u=>{user=u;uiAuth()});
+  $('authbtn').onclick=()=>{if(user)au.signOut();else $('authcard').style.display=$('authcard').style.display==='none'?'block':'none'};
+  $('signin').onclick=()=>doAuth(()=>au.signInWithEmailAndPassword($('em').value.trim(),$('pw').value));
+  $('signup').onclick=()=>doAuth(()=>au.createUserWithEmailAndPassword($('em').value.trim(),$('pw').value));
+  $('google').onclick=()=>doAuth(()=>au.signInWithPopup(new firebase.auth.GoogleAuthProvider()));
+ }
+}catch(e){}
 $('act2').onclick=()=>{if($('code').value.trim().toUpperCase()===CODE){ls.set('fc_pro','1');$('codeErr').textContent='';renderPro()}else $('codeErr').textContent='الكود غلط، راجعه وجرب تاني.'};
 $('sub').onclick=e=>{if(PAY_URL){$('sub').href=PAY_URL}else{e.preventDefault();$('codeErr').textContent='رابط الاشتراك لسه متضافش.'}};
 $('addlog').onclick=()=>{
@@ -255,7 +376,7 @@ $('go').onclick=()=>{
   const tips=['ابدأ كل تمرين بإحماء 5 دقائق، وزوّد الأوزان أو التكرارات تدريجيًا كل أسبوع.','اشرب مية كفاية ونام من 7 إلى 9 ساعات، النوم بيأثر على الدهون والعضلات.'];
   if(bmi>=30||age>50)tips.unshift('لو مبتتمرنش من فترة طويلة أو عندك مشاكل في القلب أو المفاصل، استشر دكتور قبل ما تبدأ، وابدأ بالمشي.');
   $('tips').innerHTML=tips.map(t=>'<li>'+t+'</li>').join('');
-  S={target,p:pro,c:carb,f:fat,goal,m,age,h,w,bf};chat=[];$('msgs').innerHTML='';renderPro();
+  S={target,p:pro,c:carb,f:fat,goal,m,age,h,w,bf,tdee};if(!ls.get('fc_pref'))$('shp').value={lose:'ton',keep:'ath',gain:'bulk'}[goal];chat=[];$('msgs').innerHTML='';renderPro();
   $('out').style.display='block';
   $('out').scrollIntoView({behavior:'smooth',block:'start'});
 };
