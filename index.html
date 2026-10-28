@@ -307,7 +307,7 @@ async function askAI(q){
 $('ask').onclick=()=>askAI($('q').value.trim());
 $('q').onkeydown=e=>{if(e.key==='Enter')askAI($('q').value.trim())};
 document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>askAI(b.dataset.q));
-const FIREBASE_CONFIG={apiKey:'',authDomain:'',projectId:'',appId:''};/* انسخها من Firebase */
+const FIREBASE_CONFIG={apiKey:'AIzaSyBu9P1yGaSz-A3cMgFwfKB39ZiiCSmffxA',authDomain:'apex-fit-8d951.firebaseapp.com',projectId:'apex-fit-8d951',appId:'1:1060351955529:web:8ff19e005eeb4b35e52598'};/* انسخها من Firebase */
 const AI_URL='';/* رابط الـ Worker بعد ما تنشره */
 let user=null,au=null;
 const AE={'auth/invalid-credential':'الإيميل أو الباسورد غلط.','auth/wrong-password':'الإيميل أو الباسورد غلط.','auth/user-not-found':'مفيش حساب بالإيميل ده.','auth/email-already-in-use':'الإيميل ده مسجل قبل كده.','auth/weak-password':'الباسورد ضعيف، لازم 6 حروف أو أكتر.','auth/invalid-email':'الإيميل مش مكتوب صح.','auth/popup-closed-by-user':'اتقفلت نافذة الدخول.'};
