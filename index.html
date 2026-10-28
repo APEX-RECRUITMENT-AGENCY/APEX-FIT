@@ -55,6 +55,7 @@ th,td{text-align:start;padding:8px 6px;border-bottom:1px solid var(--line);verti
 svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 .authrow{display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px}.authrow span{color:var(--mute);font-size:.9rem;direction:ltr;overflow:hidden;text-overflow:ellipsis}.authrow button{width:auto;margin:0;padding:6px 16px}
 #authcard button{margin-top:10px}
+.ad{display:none;border:1px dashed var(--line);border-radius:12px;padding:10px;text-align:center;color:var(--mute);margin-bottom:16px;min-height:90px}.ad small{display:block;font-size:.7rem}
 .chg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
 .tile{width:auto;margin:0;padding:8px 0;background:var(--soft);color:var(--ink);font-weight:800;line-height:1.2;border:1px solid var(--line)}
 .tile small{display:block;font-weight:400;font-size:.68rem;color:var(--mute)}
@@ -127,17 +128,23 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 <ul id="tips" style="margin-top:12px"></ul>
 </section>
 
+<div class="ad" id="ad1"></div>
 <section class="card" id="paywall">
 <span class="badge">PRO</span>
 <h2>افتح الخطة المتقدمة</h2>
 <ul><li>خطة أكل يومية مفصلة: وجبات وسعرات وبروتين لكل وجبة</li><li>جداول تمارين بالتفصيل: التمرين والعدد والتكرار</li><li>تتبع تقدمك بالوزن والوسط مع رسم بياني</li><li>كاليسثنكس وبيت وجيم، 3 مستويات، و4 أشكال جسم</li><li>تحدي 30 يوم وقائمة مشتريات وتذكير بالتمرين</li></ul>
 <p class="price">99 جنيه في الشهر</p>
-<a id="sub" class="btn" href="#" target="_blank" rel="noopener">اشترك الآن</a>
+<a id="sub" class="btn" href="#" target="_blank" rel="noopener">اشترك الآن (بدون إعلانات)</a>
+<button id="trial" type="button" class="ghost">ابدأ تجربة مجانية 7 أيام (مع إعلانات)</button>
+<p id="planmsg" class="note"></p>
 <label for="code" style="margin-top:14px">عندك كود تفعيل؟</label>
 <div class="row"><input id="code" placeholder="اكتب الكود" autocomplete="off"><button id="act2" type="button">فعّل</button></div>
 <p id="codeErr" role="alert" class="note"></p>
 </section>
 <div id="premium" style="display:none">
+<p id="planbar" class="note" style="margin:0 0 10px"></p>
+<a id="sub2" class="btn" href="#" target="_blank" rel="noopener" style="display:none;margin-bottom:12px">اشترك وشيل الإعلانات</a>
+<div class="ad" id="ad2"></div>
 <section class="card"><span class="badge">PRO</span><h2>خطة الأكل اليومية</h2><div id="meals"></div><p class="note">الأرقام لكل وجبة تقريبية. اختار أي بديل من الوجبة، وزوّد أو قلّل الرز والعيش عشان توصل لعدد السعرات.</p></section>
 <section class="card"><span class="badge">PRO</span><h2>اختار نظامك</h2>
 <div class="grid">
@@ -182,11 +189,16 @@ function cat(bf,m){
   const r=m?[[6,'دهون أساسية'],[14,'رياضي'],[18,'لياقة جيدة'],[25,'متوسط'],[100,'مرتفع']]:[[14,'دهون أساسية'],[21,'رياضية'],[25,'لياقة جيدة'],[32,'متوسط'],[100,'مرتفع']];
   return r.find(x=>bf<x[0])[1];
 }
-const PAY_URL='';/* حط هنا رابط الدفع بتاعك */
+const PAY_URL='https://paymob.link/gINwy';/* حط هنا رابط الدفع بتاعك */
 const CODE='PRO-2026';/* كود تجريبي، غيّره */
 let S=null;
 const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
-const isPro=()=>ls.get('fc_pro')==='1';
+const ADSENSE_CLIENT='';/* مثال: ca-pub-1234567890123456 */
+const ADSENSE_SLOT='';/* رقم وحدة الإعلان من AdSense */
+const TRIAL_DAYS=7;
+function trialLeft(){const t=+ls.get('fc_trial');return t?Math.max(0,Math.ceil((t+TRIAL_DAYS*864e5-Date.now())/864e5)):0}
+function plan(){return ls.get('fc_pro')==='1'?'pro':trialLeft()>0?'trial':'free'}
+const isPro=()=>plan()!=='free';
 const MEALS=[['الفطار',.25,'فول بزيت قليل + بيضتين مسلوقين + نص رغيف بلدي','أو: زبادي + شوفان + موزة + ملعقة زبدة فول سوداني'],['الغدا',.35,'صدور فراخ مشوية + رز أو مكرونة + خضار سوتيه + سلطة','أو: سمك مشوي + بطاطس مسلوقة + سلطة'],['سناك',.12,'زبادي يوناني + حبة فاكهة + حفنة مكسرات','أو: تونة + عيش + خيار'],['العشا',.28,'جبنة قريش + خيار وطماطم + رغيف بلدي صغير','أو: عدس أو شوربة خضار + بيضتين']];
 const J={
  A:['سكوات 3×12','ضغط صدر دمبل 3×10','تجديف دمبل 3×12','بلانك 3×30 ثانية'],
@@ -205,11 +217,35 @@ function renderPro(){
  const p=isPro();
  $('paywall').style.display=p?'none':'block';
  $('premium').style.display=p?'block':'none';
+ renderAds();renderPlanUI();
  if(!p||!S)return;
  $('meals').innerHTML=MEALS.map(m=>{const k=Math.round(S.target*m[1]/10)*10;return '<div class="meal"><h3>'+m[0]+' <small>'+n(k)+' سعر، بروتين '+n(S.p*m[1])+' جم، كارب '+n(S.c*m[1])+' جم، دهون '+n(S.f*m[1])+' جم</small></h3><div>'+m[2]+'</div><small>'+m[3]+'</small></div>'}).join('');
  $('wk').innerHTML=WK[S.goal].map(d=>'<div class="day"><h3>'+d[0]+': '+d[1]+'</h3><ul>'+d[2].map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');
  renderLog();renderExtra();
 }
+let adsLoaded=false;
+function renderAds(){
+ const show=plan()!=='pro';
+ document.querySelectorAll('.ad').forEach(el=>{
+  el.style.display=show?'block':'none';
+  if(!show||el.dataset.done)return;
+  el.dataset.done='1';
+  if(ADSENSE_CLIENT&&ADSENSE_SLOT){
+   if(!adsLoaded){adsLoaded=true;const s=document.createElement('script');s.async=true;s.crossOrigin='anonymous';s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+ADSENSE_CLIENT;document.head.appendChild(s)}
+   el.innerHTML='<ins class="adsbygoogle" style="display:block" data-ad-client="'+ADSENSE_CLIENT+'" data-ad-slot="'+ADSENSE_SLOT+'" data-ad-format="auto" data-full-width-responsive="true"></ins>';
+   try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}
+  }else el.innerHTML='<small>إعلان</small><div>مساحة إعلان تجريبية (Google AdSense)</div>';
+ });
+}
+function renderPlanUI(){
+ const pl=plan(),t=trialLeft(),started=!!+ls.get('fc_trial');
+ $('trial').style.display=(pl==='free'&&!started)?'block':'none';
+ $('planmsg').textContent=(pl==='free'&&started)?'التجربة المجانية خلصت. اشترك عشان تكمل من غير إعلانات.':'';
+ $('planbar').textContent=pl==='pro'?'اشتراك PRO فعّال، من غير إعلانات.':pl==='trial'?'تجربة مجانية: فاضل '+n(t)+' يوم ومعاها إعلانات. اشترك عشان تشيلها.':'';
+ $('sub2').style.display=pl==='trial'?'block':'none';
+}
+$('trial').onclick=()=>{if(!+ls.get('fc_trial'))ls.set('fc_trial',String(Date.now()));renderPro()};
+$('sub2').onclick=e=>{if(PAY_URL){$('sub2').href=PAY_URL}else{e.preventDefault();$('planbar').textContent='رابط الاشتراك لسه متضافش.'}};
 const EX={
 cali:{push:['ضغط على الركب أو مائل','ضغط عادي','ديبس على كرسي أو بارالل','ضغط دايموند','ضغط Pike للكتف','ضغط Archer'],pull:['تجديف تحت طاولة','سحب سلبي (Negative Pull-up)','Pull-up','Chin-up','Pull-up بتوقف 3 ثواني','تدريب Muscle-up'],legs:['سكوات بوزن الجسم','لانجز','سكوات بلغاري','Glute Bridge برجل واحدة','Shrimp Squat','Pistol Squat'],core:['~بلانك','رفع رجل','~Hollow Hold','~L-sit','Hanging Leg Raise','تدريب Dragon Flag']},
 home:{push:['ضغط','ضغط كتف دمبل','ضغط صدر دمبل على الأرض','ديبس كرسي','ضغط مائل','Arnold Press'],pull:['تجديف دمبل','تجديف دمبل برجل واحدة','Reverse Fly دمبل','باي دمبل','Pull-up على بار الباب','سحب بفوطة على الباب'],legs:['Goblet Squat','Glute Bridge','لانجز دمبل','رومانيان دمبل','سكوات بلغاري دمبل','Step-up على كرسي'],core:['~بلانك','Dead Bug','رفع رجل','Russian Twist','~Side Plank','Mountain Climbers']},
