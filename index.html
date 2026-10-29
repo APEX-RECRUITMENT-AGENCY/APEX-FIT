@@ -295,8 +295,7 @@ try{const pf=JSON.parse(ls.get('fc_pref')||'null');if(pf){$('stl').value=pf.s;$(
 $('chgrid').onclick=e=>{const b=e.target.closest('.tile');if(!b)return;const d=+b.dataset.d;let a=getCh();a=a.includes(d)?a.filter(x=>x!==d):a.concat(d);ls.set('fc_ch',JSON.stringify(a));renderCh()};
 $('rtbtn').onclick=()=>{
  const days={beg:'SA,MO,WE',int:'SA,SU,TU,TH',adv:'SA,SU,MO,WE,TH,FR'}[$('lvl').value],tm=($('rt').value||'18:00').split(':'),d=new Date(),z=x=>String(x).padStart(2,'0'),ds=d.getFullYear()+z(d.getMonth()+1)+z(d.getDate());
- const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Apex Fit//AR','BEGIN:VEVENT','UID:apexfit-'+Date.now()+'@apexfit','DTSTAMP:'+ds+'T000000Z','DTSTART:'+ds+'T'+tm[0]+tm[1]+'00','DURATION:PT45M','RRULE:FREQ=WEEKLY;BYDAY='+days,'SUMMARY:تمرين Apex Fit','BEGIN:VALARM','TRIGGER:-PT10M','ACTION:DISPLAY','DESCRIPTION:وقت التمرين','END:VALARM','END:VEVENT','END:VCALENDAR'].join('
-');
+ const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Apex Fit//AR','BEGIN:VEVENT','UID:apexfit-'+Date.now()+'@apexfit','DTSTAMP:'+ds+'T000000Z','DTSTART:'+ds+'T'+tm[0]+tm[1]+'00','DURATION:PT45M','RRULE:FREQ=WEEKLY;BYDAY='+days,'SUMMARY:تمرين Apex Fit','BEGIN:VALARM','TRIGGER:-PT10M','ACTION:DISPLAY','DESCRIPTION:وقت التمرين','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download='apex-fit-reminder.ics';document.body.appendChild(a);a.click();a.remove();
 };
 function getLog(){try{return JSON.parse(ls.get('fc_log')||'[]')}catch(e){return[]}}
@@ -333,9 +332,7 @@ async function askAI(q){
  const a=document.createElement('div');a.className='msg a';a.textContent='جاري التفكير...';box.appendChild(a);
  chat.push({role:'user',content:q});chat=chat.slice(-6);
  if(chat[0].role!=='user')chat.shift();
- const input=chat.map((m,i)=>i===0?{role:'user',content:ctxText()+'
-
-سؤال المستخدم: '+m.content}:m);
+ const input=chat.map((m,i)=>i===0?{role:'user',content:ctxText()+'\n\nسؤال المستخدم: '+m.content}:m);
  try{
   const r=await ai(input,{cache:false,onText:e=>{a.textContent=e.text}});
   a.textContent=r.text;chat.push({role:'assistant',content:r.text});
@@ -349,7 +346,7 @@ $('ask').onclick=()=>askAI($('q').value.trim());
 $('q').onkeydown=e=>{if(e.key==='Enter')askAI($('q').value.trim())};
 document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>askAI(b.dataset.q));
 const FIREBASE_CONFIG={apiKey:'AIzaSyBu9P1yGaSz-A3cMgFwfKB39ZiiCSmffxA',authDomain:'apex-fit-8d951.firebaseapp.com',projectId:'apex-fit-8d951',appId:'1:1060351955529:web:8ff19e005eeb4b35e52598'};/* انسخها من Firebase */
-const AI_URL='https://apex-assistant.rooshdy15.workers.dev/';/* رابط الـ Worker بعد ما تنشره */
+const AI_URL='';/* رابط الـ Worker بعد ما تنشره */
 let user=null,au=null;
 const AE={'auth/invalid-credential':'الإيميل أو الباسورد غلط.','auth/wrong-password':'الإيميل أو الباسورد غلط.','auth/user-not-found':'مفيش حساب بالإيميل ده.','auth/email-already-in-use':'الإيميل ده مسجل قبل كده.','auth/weak-password':'الباسورد ضعيف، لازم 6 حروف أو أكتر.','auth/invalid-email':'الإيميل مش مكتوب صح.','auth/popup-closed-by-user':'اتقفلت نافذة الدخول.'};
 function uiAuth(){
@@ -441,7 +438,7 @@ $('go').onclick=()=>{
   $('plan').innerHTML=P.map(r=>'<tr><th scope="row">'+r[0]+'</th><td>'+r[1]+'</td></tr>').join('');
   const tips=['ابدأ كل تمرين بإحماء 5 دقائق، وزوّد الأوزان أو التكرارات تدريجيًا كل أسبوع.','اشرب مية كفاية ونام من 7 إلى 9 ساعات، النوم بيأثر على الدهون والعضلات.'];
   if(bmi>=30||age>50)tips.unshift('لو مبتتمرنش من فترة طويلة أو عندك مشاكل في القلب أو المفاصل، استشر دكتور قبل ما تبدأ، وابدأ بالمشي.');
-  $('tips').innerHTML=tips.q?tips.map(t=>'<li>'+t+'</li>').join():tips.map(t=>'<li>'+t+'</li>').join('');
+  $('tips').innerHTML=tips.map(t=>'<li>'+t+'</li>').join('');
   S={target,p:pro,c:carb,f:fat,goal,m,age,h,w,bf,tdee};if(!ls.get('fc_pref'))$('shp').value={lose:'ton',keep:'ath',gain:'bulk'}[goal];chat=[];$('msgs').innerHTML='';renderPro();
   $('out').style.display='block';
   $('out').scrollIntoView({behavior:'smooth',block:'start'});
