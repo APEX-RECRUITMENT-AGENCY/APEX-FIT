@@ -133,7 +133,8 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 <span class="badge">PRO</span>
 <h2>افتح الخطة المتقدمة</h2>
 <ul><li>خطة أكل يومية مفصلة: وجبات وسعرات وبروتين لكل وجبة</li><li>جداول تمارين بالتفصيل: التمرين والعدد والتكرار</li><li>تتبع تقدمك بالوزن والوسط مع رسم بياني</li><li>كاليسثنكس وبيت وجيم، 3 مستويات، و4 أشكال جسم</li><li>تحدي 30 يوم وقائمة مشتريات وتذكير بالتمرين</li></ul>
-<p class="price">99 جنيه في الشهر</p>
+<label for="plansel" style="margin-top:12px">اختار مدة الاشتراك</label>
+<select id="plansel" style="margin-bottom:12px"><option value="m1">شهر واحد: 99 جنيه</option><option value="m3">3 شهور: 249 جنيه</option><option value="y1">سنة كاملة: 899 جنيه</option></select>
 <a id="sub" class="btn" href="#" target="_blank" rel="noopener">اشترك الآن (بدون إعلانات)</a>
 <button id="trial" type="button" class="ghost">ابدأ تجربة مجانية 7 أيام (مع إعلانات)</button>
 <p id="planmsg" class="note"></p>
@@ -197,7 +198,8 @@ const ADSENSE_CLIENT='';/* مثال: ca-pub-1234567890123456 */
 const ADSENSE_SLOT='';/* رقم وحدة الإعلان من AdSense */
 const TRIAL_DAYS=7;
 function trialLeft(){const t=+ls.get('fc_trial');return t?Math.max(0,Math.ceil((t+TRIAL_DAYS*864e5-Date.now())/864e5)):0}
-function plan(){return ls.get('fc_pro')==='1'?'pro':trialLeft()>0?'trial':'free'}
+let proUntil=0;
+function plan(){return (ls.get('fc_pro')==='1'||proUntil>Date.now())?'pro':trialLeft()>0?'trial':'free'}
 const isPro=()=>plan()!=='free';
 const MEALS=[['الفطار',.25,'فول بزيت قليل + بيضتين مسلوقين + نص رغيف بلدي','أو: زبادي + شوفان + موزة + ملعقة زبدة فول سوداني'],['الغدا',.35,'صدور فراخ مشوية + رز أو مكرونة + خضار سوتيه + سلطة','أو: سمك مشوي + بطاطس مسلوقة + سلطة'],['سناك',.12,'زبادي يوناني + حبة فاكهة + حفنة مكسرات','أو: تونة + عيش + خيار'],['العشا',.28,'جبنة قريش + خيار وطماطم + رغيف بلدي صغير','أو: عدس أو شوربة خضار + بيضتين']];
 const J={
@@ -241,11 +243,11 @@ function renderPlanUI(){
  const pl=plan(),t=trialLeft(),started=!!+ls.get('fc_trial');
  $('trial').style.display=(pl==='free'&&!started)?'block':'none';
  $('planmsg').textContent=(pl==='free'&&started)?'التجربة المجانية خلصت. اشترك عشان تكمل من غير إعلانات.':'';
- $('planbar').textContent=pl==='pro'?'اشتراك PRO فعّال، من غير إعلانات.':pl==='trial'?'تجربة مجانية: فاضل '+n(t)+' يوم ومعاها إعلانات. اشترك عشان تشيلها.':'';
+ $('planbar').textContent=pl==='pro'?(proUntil>Date.now()?'اشتراك PRO فعّال لحد '+new Date(proUntil).toLocaleDateString('ar-EG')+'، من غير إعلانات.':'اشتراك PRO فعّال، من غير إعلانات.'):pl==='trial'?'تجربة مجانية: فاضل '+n(t)+' يوم ومعاها إعلانات. اشترك عشان تشيلها.':'';
  $('sub2').style.display=pl==='trial'?'block':'none';
 }
 $('trial').onclick=()=>{if(!+ls.get('fc_trial'))ls.set('fc_trial',String(Date.now()));renderPro()};
-$('sub2').onclick=e=>{if(PAY_URL){$('sub2').href=PAY_URL}else{e.preventDefault();$('planbar').textContent='رابط الاشتراك لسه متضافش.'}};
+$('sub2').onclick=startCheckout;
 const EX={
 cali:{push:['ضغط على الركب أو مائل','ضغط عادي','ديبس على كرسي أو بارالل','ضغط دايموند','ضغط Pike للكتف','ضغط Archer'],pull:['تجديف تحت طاولة','سحب سلبي (Negative Pull-up)','Pull-up','Chin-up','Pull-up بتوقف 3 ثواني','تدريب Muscle-up'],legs:['سكوات بوزن الجسم','لانجز','سكوات بلغاري','Glute Bridge برجل واحدة','Shrimp Squat','Pistol Squat'],core:['~بلانك','رفع رجل','~Hollow Hold','~L-sit','Hanging Leg Raise','تدريب Dragon Flag']},
 home:{push:['ضغط','ضغط كتف دمبل','ضغط صدر دمبل على الأرض','ديبس كرسي','ضغط مائل','Arnold Press'],pull:['تجديف دمبل','تجديف دمبل برجل واحدة','Reverse Fly دمبل','باي دمبل','Pull-up على بار الباب','سحب بفوطة على الباب'],legs:['Goblet Squat','Glute Bridge','لانجز دمبل','رومانيان دمبل','سكوات بلغاري دمبل','Step-up على كرسي'],core:['~بلانك','Dead Bug','رفع رجل','Russian Twist','~Side Plank','Mountain Climbers']},
@@ -360,7 +362,7 @@ async function doAuth(fn){
 try{
  if(window.firebase&&FIREBASE_CONFIG.apiKey){
   firebase.initializeApp(FIREBASE_CONFIG);au=firebase.auth();
-  au.onAuthStateChanged(u=>{user=u;uiAuth()});
+  au.onAuthStateChanged(u=>{user=u;if(!u)proUntil=0;uiAuth();refreshSub();renderPro()});
   $('authbtn').onclick=()=>{if(user)au.signOut();else $('authcard').style.display=$('authcard').style.display==='none'?'block':'none'};
   $('signin').onclick=()=>doAuth(()=>au.signInWithEmailAndPassword($('em').value.trim(),$('pw').value));
   $('signup').onclick=()=>doAuth(()=>au.createUserWithEmailAndPassword($('em').value.trim(),$('pw').value));
@@ -368,7 +370,32 @@ try{
  }
 }catch(e){}
 $('act2').onclick=()=>{if($('code').value.trim().toUpperCase()===CODE){ls.set('fc_pro','1');$('codeErr').textContent='';renderPro()}else $('codeErr').textContent='الكود غلط، راجعه وجرب تاني.'};
-$('sub').onclick=e=>{if(PAY_URL){$('sub').href=PAY_URL}else{e.preventDefault();$('codeErr').textContent='رابط الاشتراك لسه متضافش.'}};
+let polls=0;
+function say(t){$('planmsg').textContent=t;$('planbar').textContent=t}
+async function refreshSub(){
+ if(!AI_URL||!user)return;
+ try{
+  const t=await user.getIdToken(),r=await fetch(AI_URL+'/status',{method:'POST',headers:{Authorization:'Bearer '+t}});
+  if(r.ok){const d=await r.json();proUntil=d.until||0;renderPro()}
+ }catch(e){}
+ if(location.search.indexOf('paid=1')>-1&&proUntil<=Date.now()&&polls++<8){
+  $('planmsg').textContent='بنأكد الدفع بتاعك، استنى ثواني...';
+  setTimeout(refreshSub,3000);
+ }
+}
+async function startCheckout(e){
+ e.preventDefault();
+ if(!AI_URL){if(PAY_URL)window.open(PAY_URL,'_blank','noopener');else say('رابط الاشتراك لسه متضافش.');return}
+ if(!user){$('authcard').style.display='block';$('authcard').scrollIntoView({behavior:'smooth'});say('سجّل دخول الأول عشان اشتراكك يتربط بحسابك.');return}
+ say('جاري تجهيز الدفع...');
+ try{
+  const t=await user.getIdToken();
+  const r=await fetch(AI_URL+'/checkout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({plan:$('plansel').value})});
+  if(!r.ok)throw 0;
+  const d=await r.json();location.href=d.url;
+ }catch(x){say('حصلت مشكلة في تجهيز الدفع، جرب تاني.')}
+}
+$('sub').onclick=startCheckout;
 $('addlog').onclick=()=>{
  const w=+$('lw').value,a=+$('lwa').value||0;if(!w||w<35||w>250)return;
  const d=new Date().toISOString().slice(0,10),L=getLog().filter(x=>x.d!==d);L.push({d,w,a});L.sort((x,y)=>x.d<y.d?-1:1);
