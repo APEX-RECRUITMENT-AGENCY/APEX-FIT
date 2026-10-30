@@ -56,6 +56,9 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 .authrow{display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 0 14px}.authrow span{color:var(--mute);font-size:.9rem;direction:ltr;overflow:hidden;text-overflow:ellipsis}.authrow button{width:auto;margin:0;padding:6px 16px}
 #authcard button{margin-top:10px}
 .ad{display:none;border:1px dashed var(--line);border-radius:12px;padding:10px;text-align:center;color:var(--mute);margin-bottom:16px;min-height:90px}.ad small{display:block;font-size:.7rem}
+.cbox{text-align:center;margin:10px 0 6px}.cbox small{color:var(--mute)}.cnum{font-size:3.2rem;font-weight:800;color:var(--accent);line-height:1.1}
+.pre{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.pre button{width:auto;margin:0;padding:6px 12px;font-weight:600;font-size:.85rem}
+#ctr .row button{flex:1}
 .chg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
 .tile{width:auto;margin:0;padding:8px 0;background:var(--soft);color:var(--ink);font-weight:800;line-height:1.2;border:1px solid var(--line)}
 .tile small{display:block;font-weight:400;font-size:.68rem;color:var(--mute)}
@@ -128,6 +131,17 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 <ul id="tips" style="margin-top:12px"></ul>
 </section>
 
+<section class="card" id="ctr">
+<h2>عدّاد التمرين</h2>
+<div class="cbox"><small>التكرارات</small><div class="cnum" id="reps">٠</div><small id="setl">المجموعة ١</small></div>
+<div class="row"><button id="rp" type="button">+١ تكرار</button><button id="rm" type="button" class="ghost">-١</button></div>
+<button id="setdone" type="button" class="ghost">خلّصت المجموعة</button>
+<div class="cbox" style="margin-top:18px"><small>مؤقت الراحة أو الثبات</small><div class="cnum" id="tm">٠٠:٣٠</div></div>
+<div class="pre" id="tpre"><button type="button" class="ghost" data-s="20">20 ث</button><button type="button" class="ghost" data-s="30">30 ث</button><button type="button" class="ghost" data-s="45">45 ث</button><button type="button" class="ghost" data-s="60">60 ث</button><button type="button" class="ghost" data-s="90">90 ث</button><button type="button" class="ghost" data-s="120">دقيقتين</button></div>
+<div class="row"><button id="tgo" type="button">ابدأ</button><button id="trs" type="button" class="ghost">إعادة</button></div>
+<label style="margin-top:12px"><input type="checkbox" id="auto" checked style="width:auto;margin-inline-end:6px">ابدأ الراحة تلقائيًا بعد كل مجموعة</label>
+<button id="ctrreset" type="button" class="ghost">تصفير الكل</button>
+</section>
 <div class="ad" id="ad1"></div>
 <section class="card" id="paywall">
 <span class="badge">PRO</span>
@@ -225,6 +239,30 @@ function renderPro(){
  $('wk').innerHTML=WK[S.goal].map(d=>'<div class="day"><h3>'+d[0]+': '+d[1]+'</h3><ul>'+d[2].map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');
  renderLog();renderExtra();
 }
+(function(){
+ let reps=0,set=1,base=30,left=30,run=null;
+ const AD='٠١٢٣٤٥٦٧٨٩',ar=s=>String(s).replace(/\d/g,d=>AD[d]);
+ const fmt=s=>ar(String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'));
+ function draw(){$('reps').textContent=ar(reps);$('setl').textContent='المجموعة '+ar(set);$('tm').textContent=fmt(left)}
+ function beep(){
+  try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.2;o.start();setTimeout(()=>{o.stop();a.close()},600)}catch(e){}
+  try{if(navigator.vibrate)navigator.vibrate([300,100,300])}catch(e){}
+ }
+ function stop(){if(run){clearInterval(run);run=null}$('tgo').textContent='ابدأ'}
+ function start(){
+  stop();if(left<=0)left=base;
+  const end=Date.now()+left*1000;$('tgo').textContent='إيقاف مؤقت';
+  run=setInterval(()=>{left=Math.max(0,Math.round((end-Date.now())/1000));draw();if(left<=0){stop();beep()}},250);
+ }
+ $('rp').onclick=()=>{reps++;draw();try{if(navigator.vibrate)navigator.vibrate(20)}catch(e){}};
+ $('rm').onclick=()=>{reps=Math.max(0,reps-1);draw()};
+ $('setdone').onclick=()=>{set++;reps=0;if($('auto').checked){left=base;start()}draw()};
+ $('tpre').onclick=e=>{const b=e.target.closest('button');if(!b)return;base=+b.dataset.s;left=base;stop();draw()};
+ $('tgo').onclick=()=>{if(run)stop();else start()};
+ $('trs').onclick=()=>{stop();left=base;draw()};
+ $('ctrreset').onclick=()=>{stop();reps=0;set=1;left=base;draw()};
+ draw();
+})();
 let adsLoaded=false;
 function renderAds(){
  const show=plan()!=='pro';
@@ -317,7 +355,7 @@ async function getAI(){
   const t=await user.getIdToken();
   const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({messages:input})});
   if(r.status===429)throw{code:'rate_limited'};
-  if(!r.ok)throw{code:'error'};
+  if(!r.ok)throw{code:'error',status:r.status};
   const d=await r.json();
   return{text:d.text||''};
  };
@@ -338,7 +376,7 @@ async function askAI(q){
   a.textContent=r.text;chat.push({role:'assistant',content:r.text});
  }catch(e){
   chat.pop();
-  a.textContent=e&&e.code==='rate_limited'?'استنى شوية وجرب تاني.':e&&e.code==='login'?'سجّل دخول الأول من فوق عشان تستخدم المساعد.':e&&e.code==='not_granted'?'لازم توافق على استخدام المساعد عشان يشتغل.':'حصلت مشكلة، جرب تاني.';
+  a.textContent=e&&e.code==='rate_limited'?'استنى شوية وجرب تاني.':e&&e.code==='login'?'سجّل دخول الأول من فوق عشان تستخدم المساعد.':e&&e.code==='not_granted'?'لازم توافق على استخدام المساعد عشان يشتغل.':e&&e.status?'حصلت مشكلة (رقم '+e.status+')، ابعته للمطور.':e instanceof TypeError?'مفيش اتصال بالـ Worker، راجع الرابط وإعداد ALLOWED_ORIGIN.':'حصلت مشكلة، جرب تاني.';
  }
  busy=false;$('ask').disabled=false;$('q').value='';
 }
@@ -346,7 +384,7 @@ $('ask').onclick=()=>askAI($('q').value.trim());
 $('q').onkeydown=e=>{if(e.key==='Enter')askAI($('q').value.trim())};
 document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>askAI(b.dataset.q));
 const FIREBASE_CONFIG={apiKey:'AIzaSyBu9P1yGaSz-A3cMgFwfKB39ZiiCSmffxA',authDomain:'apex-fit-8d951.firebaseapp.com',projectId:'apex-fit-8d951',appId:'1:1060351955529:web:8ff19e005eeb4b35e52598'};/* انسخها من Firebase */
-const AI_URL='';/* رابط الـ Worker بعد ما تنشره */
+const AI_URL='https://apex-assistant.rooshdy15.workers.dev';/* رابط الـ Worker بعد ما تنشره */
 let user=null,au=null;
 const AE={'auth/invalid-credential':'الإيميل أو الباسورد غلط.','auth/wrong-password':'الإيميل أو الباسورد غلط.','auth/user-not-found':'مفيش حساب بالإيميل ده.','auth/email-already-in-use':'الإيميل ده مسجل قبل كده.','auth/weak-password':'الباسورد ضعيف، لازم 6 حروف أو أكتر.','auth/invalid-email':'الإيميل مش مكتوب صح.','auth/popup-closed-by-user':'اتقفلت نافذة الدخول.'};
 function uiAuth(){
