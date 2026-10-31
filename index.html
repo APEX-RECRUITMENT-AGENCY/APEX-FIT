@@ -59,6 +59,8 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 .cbox{text-align:center;margin:10px 0 6px}.cbox small{color:var(--mute)}.cnum{font-size:3.2rem;font-weight:800;color:var(--accent);line-height:1.1}
 .pre{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.pre button{width:auto;margin:0;padding:6px 12px;font-weight:600;font-size:.85rem}
 #ctr .row button{flex:1}
+.camwrap{position:relative;margin-top:10px;border-radius:12px;overflow:hidden;background:#000}.camwrap video,.camwrap canvas{display:block;width:100%;transform:scaleX(-1)}.camwrap canvas{position:absolute;inset:0;height:100%}
+.fbok{color:var(--accent)}.fbwarn{color:var(--warn)}#camfb{min-height:1.6em;font-weight:600}
 .chg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:10px}
 .tile{width:auto;margin:0;padding:8px 0;background:var(--soft);color:var(--ink);font-weight:800;line-height:1.2;border:1px solid var(--line)}
 .tile small{display:block;font-weight:400;font-size:.68rem;color:var(--mute)}
@@ -146,7 +148,7 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 <section class="card" id="paywall">
 <span class="badge">PRO</span>
 <h2>افتح الخطة المتقدمة</h2>
-<ul><li>خطة أكل يومية مفصلة: وجبات وسعرات وبروتين لكل وجبة</li><li>جداول تمارين بالتفصيل: التمرين والعدد والتكرار</li><li>تتبع تقدمك بالوزن والوسط مع رسم بياني</li><li>كاليسثنكس وبيت وجيم، 3 مستويات، و4 أشكال جسم</li><li>تحدي 30 يوم وقائمة مشتريات وتذكير بالتمرين</li></ul>
+<ul><li>خطة أكل يومية مفصلة: وجبات وسعرات وبروتين لكل وجبة</li><li>جداول تمارين بالتفصيل: التمرين والعدد والتكرار</li><li>تتبع تقدمك بالوزن والوسط مع رسم بياني</li><li>كاليسثنكس وبيت وجيم، 3 مستويات، و4 أشكال جسم</li><li>مدرب بالكاميرا بيعدّ التكرارات وبيصحّح الحركة</li><li>تحدي 30 يوم وقائمة مشتريات وتذكير بالتمرين</li></ul>
 <label for="plansel" style="margin-top:12px">اختار مدة الاشتراك</label>
 <select id="plansel" style="margin-bottom:12px"><option value="m1">شهر واحد: 99 جنيه</option><option value="m3">3 شهور: 249 جنيه</option><option value="y1">سنة كاملة: 899 جنيه</option></select>
 <a id="sub" class="btn" href="#" target="_blank" rel="noopener">اشترك الآن (بدون إعلانات)</a>
@@ -168,6 +170,15 @@ svg.chart{width:100%;height:auto;display:block;margin-top:10px}
 <div class="full"><label for="shp">شكل الجسم</label><select id="shp"><option value="ath">عضلي رياضي</option><option value="ton">نحيف مشدود (Toned)</option><option value="bulk">ضخم (Bulk)</option><option value="lithe">رشيق وقوي للسيدات</option></select></div>
 </div><p id="shnote" class="note"></p></section>
 <section class="card"><span class="badge">PRO</span><h2>جدول التمارين التفصيلي</h2><div id="wk"></div><p class="note">لما توصل لأعلى عدد تكرارات في كل المجموعات، زوّد الوزن شوية في التمرينة الجاية.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>مدرب الكاميرا</h2>
+<p class="note" style="margin-top:0">الكاميرا بتعدّ تكراراتك وتقول لك لو الحركة غلط. الفيديو بيتحلل على موبايلك نفسه ومابيتبعتش لأي مكان.</p>
+<label for="cex">التمرين</label>
+<select id="cex"><option value="squat">سكوات</option><option value="pushup">ضغط</option><option value="plank">بلانك</option></select>
+<p class="note" id="camtip"></p>
+<div class="camwrap" id="camwrap" style="display:none"><video id="cam" playsinline muted></video><canvas id="camcv"></canvas></div>
+<div class="cbox"><small id="camlbl">التكرارات</small><div class="cnum" id="camreps">٠</div><div id="camfb" class="note" role="status"></div></div>
+<div class="row"><button id="camgo" type="button">شغّل الكاميرا</button><button id="camrs" type="button" class="ghost">تصفير</button></div>
+<p class="note">التقييم تقريبي ومش بديل لمدرب. اتمرن بحذر، واقف لو حسيت بألم. الإضاءة الكويسة وظهور جسمك كله في الكادر بيحسّنوا الدقة.</p></section>
 <section class="card"><span class="badge">PRO</span><h2>تحدي 30 يوم</h2>
 <p class="note" style="margin-top:0" id="chcount"></p>
 <div class="chg" id="chgrid"></div>
@@ -262,6 +273,106 @@ function renderPro(){
  $('trs').onclick=()=>{stop();left=base;draw()};
  $('ctrreset').onclick=()=>{stop();reps=0;set=1;left=base;draw()};
  draw();
+})();
+(function(){
+ const LIB='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+ const MODEL_URL='https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+ const AD='٠١٢٣٤٥٦٧٨٩',ar=s=>String(s).replace(/\d/g,d=>AD[d]);
+ const TIPS={squat:'حط الموبايل على بعد حوالي 2 متر، وخلّي جسمك كله ظاهر من الراس للرجل.',pushup:'حط الموبايل على الأرض من جنبك، وخلّي جسمك كله ظاهر من الراس للرجل.',plank:'حط الموبايل على الأرض من جنبك، وخلّي جسمك كله ظاهر من الراس للرجل.'};
+ const LINKS=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
+ const C={pl:null,on:false,stream:null,lt:-1,stage:'up',minA:180,reps:0,hold:0,last:0,sm:{}};
+ const sm=(k,v)=>C.sm[k]=C.sm[k]==null?v:C.sm[k]*.6+v*.4;
+ const vib=()=>{try{if(navigator.vibrate)navigator.vibrate(60)}catch(e){}};
+ function fb(t,good){$('camfb').textContent=t;$('camfb').className='note '+(good?'fbok':'fbwarn')}
+ function show(){const p=$('cex').value==='plank';$('camlbl').textContent=p?'ثواني الثبات':'التكرارات';$('camreps').textContent=ar(p?Math.floor(C.hold):C.reps)}
+ function resetCam(){C.stage='up';C.minA=180;C.reps=0;C.hold=0;C.sm={};show()}
+ function ang(a,b,c){const x1=a.x-b.x,y1=a.y-b.y,x2=c.x-b.x,y2=c.y-b.y,m=Math.hypot(x1,y1)*Math.hypot(x2,y2);return m?Math.acos(Math.max(-1,Math.min(1,(x1*x2+y1*y2)/m)))*180/Math.PI:180}
+ function analyze(L,vw,vh,dt){
+  const ex=$('cex').value,P=i=>({x:L[i].x*vw,y:L[i].y*vh}),V=i=>L[i].visibility||0;
+  const pick=(a,b)=>{const s=x=>x.reduce((t,i)=>t+V(i),0)/x.length;return s(a)>=s(b)?a:b};
+  const vis=c=>c.every(i=>V(i)>.5),A=c=>ang(P(c[0]),P(c[1]),P(c[2]));
+  const sag=b=>{const s=P(b[0]),h=P(b[1]),a=P(b[2]),dx=a.x-s.x;return Math.abs(dx)<20?0:h.y-(s.y+(h.x-s.x)/dx*(a.y-s.y))};
+  if(ex==='squat'){
+   const c=pick([23,25,27],[24,26,28]);
+   if(!vis(c))return fb('ابعد شوية وخلّي جسمك كله ظاهر',false);
+   const k=sm('k',A(c)),t=pick([11,23],[12,24]),s=P(t[0]),h=P(t[1]),lean=Math.atan2(Math.abs(s.x-h.x),h.y-s.y)*180/Math.PI;
+   if(C.stage==='up'&&k<150){C.stage='down';C.minA=k}
+   if(C.stage==='down'){
+    C.minA=Math.min(C.minA,k);
+    if(k>160){C.stage='up';if(C.minA<=110){C.reps++;vib();fb('عدّة سليمة، كمّل!',true)}else fb('انزل أكتر عشان العدّة تتحسب',false)}
+    else if(lean>60)fb('ظهرك مايل لقدام، اشدّ صدرك',false);
+    else if(k<=110)fb('عمق ممتاز، اطلع',true);
+    else fb('كمّل نزول',true);
+   }else fb('جاهز، ابدأ النزول',true);
+  }else{
+   const b=pick([11,23,27],[12,24,28]);
+   if(!vis(b))return fb('خلّي جسمك كله ظاهر من الجنب',false);
+   const body=sm('b',A(b)),sg=sag(b),bad=body<155;
+   const msg=bad?(sg>0?'ارفع حوضك، ظهرك واطي':'نزّل حوضك، مرفوع زيادة'):'';
+   if(ex==='plank'){
+    if(!bad){C.hold+=dt;fb('ثبات ممتاز، كمّل',true)}else fb(msg,false);
+   }else{
+    const c=pick([11,13,15],[12,14,16]);
+    if(!vis(c))return fb('خلّي دراعك ظاهر في الكادر',false);
+    const e=sm('e',A(c));
+    if(C.stage==='up'&&e<130){C.stage='down';C.minA=e}
+    if(C.stage==='down'){
+     C.minA=Math.min(C.minA,e);
+     if(e>155){C.stage='up';if(C.minA<=100){C.reps++;vib();fb('عدّة سليمة، كمّل!',true)}else fb('انزل أكتر عشان العدّة تتحسب',false)}
+     else if(bad)fb(msg,false);
+     else fb(e<=100?'نزلة ممتازة، اطلع':'كمّل نزول',true);
+    }else if(bad)fb(msg,false);else fb('جاهز، ابدأ النزول',true);
+   }
+  }
+ }
+ function draw(L,vw,vh){
+  const cv=$('camcv'),g=cv.getContext('2d');if(cv.width!==vw){cv.width=vw;cv.height=vh}
+  g.clearRect(0,0,vw,vh);g.lineWidth=4;g.strokeStyle='#3fd49b';g.fillStyle='#fff';
+  LINKS.forEach(([a,b])=>{if((L[a].visibility||0)>.5&&(L[b].visibility||0)>.5){g.beginPath();g.moveTo(L[a].x*vw,L[a].y*vh);g.lineTo(L[b].x*vw,L[b].y*vh);g.stroke()}});
+  [11,12,13,14,15,16,23,24,25,26,27,28].forEach(i=>{if((L[i].visibility||0)>.5){g.beginPath();g.arc(L[i].x*vw,L[i].y*vh,5,0,7);g.fill()}});
+ }
+ function loop(){
+  if(!C.on)return;
+  const v=$('cam');
+  if(v.readyState>=2&&v.currentTime!==C.lt){
+   C.lt=v.currentTime;
+   const now=performance.now(),dt=Math.min(.2,(now-C.last)/1000);C.last=now;
+   try{
+    const r=C.pl.detectForVideo(v,now),L=r.landmarks&&r.landmarks[0];
+    if(L){draw(L,v.videoWidth,v.videoHeight);analyze(L,v.videoWidth,v.videoHeight,dt)}
+    else{const cv=$('camcv');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);fb('مش شايفك، ادخل في الكادر',false)}
+   }catch(e){}
+   show();
+  }
+  requestAnimationFrame(loop);
+ }
+ async function loadPose(){
+  if(C.pl)return;
+  const m=await import(LIB+'/+esm');
+  const fs=await m.FilesetResolver.forVisionTasks(LIB+'/wasm');
+  const opt=d=>({baseOptions:{modelAssetPath:MODEL_URL,delegate:d},runningMode:'VIDEO',numPoses:1});
+  try{C.pl=await m.PoseLandmarker.createFromOptions(fs,opt('GPU'))}catch(e){C.pl=await m.PoseLandmarker.createFromOptions(fs,opt('CPU'))}
+ }
+ function stopCam(){C.on=false;if(C.stream){C.stream.getTracks().forEach(t=>t.stop());C.stream=null}$('camwrap').style.display='none';$('camgo').textContent='شغّل الكاميرا'}
+ async function startCam(){
+  $('camgo').disabled=true;fb('جاري تحميل نموذج الكاميرا (أول مرة بس)...',true);
+  try{
+   await loadPose();
+   C.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
+   const v=$('cam');v.srcObject=C.stream;await v.play();
+   $('camwrap').style.display='block';C.on=true;C.last=performance.now();C.lt=-1;resetCam();
+   $('camgo').textContent='إيقاف الكاميرا';fb('جاهز، خلّي جسمك كله ظاهر',true);loop();
+  }catch(e){
+   const nm=e&&e.name;
+   fb(nm==='NotAllowedError'?'لازم تسمح للكاميرا من إعدادات المتصفح.':nm==='NotFoundError'?'مفيش كاميرا على الجهاز.':'تعذّر تشغيل الكاميرا هنا. الميزة دي بتشتغل على موقعك الأساسي.',false);
+  }
+  $('camgo').disabled=false;
+ }
+ $('camgo').onclick=()=>{if(C.on)stopCam();else startCam()};
+ $('camrs').onclick=resetCam;
+ $('cex').onchange=()=>{resetCam();$('camtip').textContent=TIPS[$('cex').value];fb('',true)};
+ document.addEventListener('visibilitychange',()=>{if(document.hidden&&C.on)stopCam()});
+ $('camtip').textContent=TIPS.squat;show();
 })();
 let adsLoaded=false;
 function renderAds(){
