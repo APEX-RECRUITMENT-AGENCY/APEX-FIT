@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apex Fit | حاسبة السعرات والدهون والتمارين</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<style>
+:root{--bg:#f8fafc;--card:#ffffff;--ink:#0f172a;--mute:#64748b;--line:#e2e8f0;--accent:#059669;--accent-ink:#ffffff;--soft:#ecfdf5;--warn:#b45309;--radius:16px;--glass:rgba(255,255,255,0.8);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* المظهر الغامق الفخم - هو الافتراضي أو عند اختيار النظام */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#070b09;--card:#121b16;--ink:#f1f5f9;--mute:#94a3b8;--line:#223028;--accent:#10b981;--accent-ink:#042f1e;--soft:#064e3b;--warn:#f59e0b;--glass:rgba(18,27,22,0.8);
+}}
+:root[data-theme="dark"]{
+  --bg:#070b09;--card:#121b16;--ink:#f1f5f9;--mute:#94a3b8;--line:#223028;--accent:#10b981;--accent-ink:#042f1e;--soft:#064e3b;--warn:#f59e0b;--glass:rgba(18,27,22,0.8);
+}
+
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+*{box-sizing:border-box;transition:background-color 0.3s, border-color 0.3s, transform 0.2s}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Cairo',Tahoma,Arial,sans-serif;line-height:1.7;background-attachment:fixed;background-image:radial-gradient(circle at 0% 0%, var(--soft) 0%, transparent 25%), radial-gradient(circle at 100% 100%, var(--soft) 0%, transparent 25%)}
+main{max-width:720px;margin:0 auto;padding:24px 16px 64px}
+h1,h2,h3{font-weight:800;letter-spacing:-0.02em}
+h1{font-size:1.8rem;margin:12px 0 6px}
+.sub{color:var(--mute);margin:0 0 24px;font-size:0.95rem}
+.brand{display:flex;align-items:center;gap:14px;margin:8px 0 12px}.brand svg{width:64px;height:64px;flex:none;filter:drop-shadow(0 4px 12px rgba(16,185,129,0.3))}.brand h1{margin:0;letter-spacing:1px;direction:ltr;font-size:2rem}.brand h1 span{font-weight:400;color:var(--mute)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:20px;box-shadow:0 4px 20px -5px rgba(0,0,0,0.1);backdrop-filter:blur(8px)}
+.card:hover{transform:translateY(-2px);box-shadow:0 8px 30px -10px rgba(0,0,0,0.2);border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+label{display:block;font-weight:700;font-size:.85rem;margin-bottom:6px;color:var(--mute);text-transform:uppercase;letter-spacing:0.05em}
+input,select{width:100%;font:inherit;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);appearance:none}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--soft)}
+.full{grid-column:1/-1}
+button{font:inherit;font-weight:800;width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:linear-gradient(135deg, var(--accent), #059669);color:var(--accent-ink);cursor:pointer;box-shadow:0 4px 12px rgba(16,185,129,0.3);position:relative;overflow:hidden}
+button:active{transform:scale(0.98)}
+button::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0.1);opacity:0;transition:0.2s}
+button:hover::after{opacity:1}
+#err{color:var(--warn);margin:12px 0 0;min-height:1.4em;font-weight:600;text-align:center}
+#out{display:none;animation:fadeIn 0.5s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.big{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big b{font-size:3.5rem;font-weight:800;color:var(--accent);line-height:1;text-shadow:0 0 20px rgba(16,185,129,0.2)}
+.big span{color:var(--mute);font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+.stat{background:var(--soft);border-radius:12px;padding:12px 16px;border:1px solid var(--line)}
+.stat small{display:block;color:var(--mute);font-weight:700;margin-bottom:2px}
+.stat strong{font-size:1.25rem;color:var(--ink)}
+h2{font-size:1.3rem;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+h2::before{content:'';width:4px;height:1.2em;background:var(--accent);border-radius:99px}
+ul{margin:0;padding-inline-start:24px}
+li{margin-bottom:6px}
+table{width:100%;border-collapse:separate;border-spacing:0}
+th,td{text-align:start;padding:12px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tw{overflow-x:auto;border-radius:12px;border:1px solid var(--line)}
+.note{color:var(--mute);font-size:.85rem;background:var(--soft);padding:8px 12px;border-radius:8px;margin-top:10px}
+.credit{text-align:center;font-weight:600;color:var(--mute);margin:32px 0 0;font-size:0.9rem}
+.credit strong{color:var(--accent)}
+.badge{display:inline-flex;align-items:center;background:linear-gradient(45deg, var(--warn), #ea580c);color:#fff;font-weight:800;font-size:.7rem;padding:3px 12px;border-radius:99px;margin-bottom:8px;box-shadow:0 2px 8px rgba(234,88,12,0.3)}
+.price{font-size:1.6rem;font-weight:800;color:var(--accent);margin:12px 0}
+.btn{display:block;text-align:center;text-decoration:none;font-weight:800;padding:14px;border-radius:12px;background:var(--accent);color:var(--accent-ink);box-shadow:0 4px 12px rgba(16,185,129,0.3)}
+.row{display:flex;gap:10px;margin-top:8px}.row button{width:auto;margin:0;padding:12px 24px}
+.meal{border-bottom:1px solid var(--line);padding:14px 0}.meal:last-child{border:0}
+.meal h3{margin:0 0 4px;font-size:1.1rem;color:var(--accent)}.meal small{color:var(--mute);font-size:0.85rem;display:block}
+.day{background:var(--soft);border-radius:12px;padding:14px 16px;margin-bottom:12px;border:1px solid var(--line)}.day h3{margin:0 0 6px;font-size:1.1rem;color:var(--accent)}
+.ghost{background:transparent;color:var(--accent);border:2px solid var(--accent);box-shadow:none}
+.ghost:hover{background:var(--soft)}
+svg.chart{width:100%;height:auto;display:block;margin-top:16px;border-radius:12px;background:var(--bg)}
+.authrow{display:none;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px;padding:10px 14px;background:var(--soft);border-radius:12px;border:1px solid var(--line)}.authrow span{color:var(--ink);font-weight:700;font-size:.9rem;direction:ltr;overflow:hidden;text-overflow:ellipsis}.authrow button{width:auto;margin:0;padding:6px 14px;font-size:0.85rem}
+#authcard button{margin-top:12px}
+.ad{display:none;border:2px dashed var(--line);border-radius:14px;padding:12px;text-align:center;color:var(--mute);margin-bottom:20px;min-height:100px;background:rgba(0,0,0,0.02)}.ad small{display:block;font-size:.7rem;margin-bottom:4px}
+.cbox{text-align:center;margin:12px 0 8px;padding:16px;background:var(--soft);border-radius:16px;border:1px solid var(--line)}.cbox small{color:var(--mute);font-weight:700;text-transform:uppercase}.cnum{font-size:4rem;font-weight:800;color:var(--accent);line-height:1}
+.pre{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.pre button{width:auto;margin:0;padding:8px 14px;font-weight:700;font-size:.85rem;border-radius:10px}
+#ctr .row button{flex:1}
+.camwrap{position:relative;margin-top:12px;border-radius:16px;overflow:hidden;background:#000;box-shadow:0 10px 30px rgba(0,0,0,0.4);aspect-ratio:4/3}.camwrap video,.camwrap canvas{display:block;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}.camwrap canvas{position:absolute;inset:0}
+.fbok{color:var(--accent)}.fbwarn{color:var(--warn)}#camfb{min-height:1.6em;font-weight:700;font-size:1.1rem;margin-top:8px}
+.chg{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:14px}
+.tile{width:auto;margin:0;padding:12px 0;background:var(--card);color:var(--ink);font-weight:800;line-height:1.2;border:2px solid var(--line);border-radius:12px;cursor:pointer}
+.tile:hover{border-color:var(--accent);background:var(--soft)}
+.tile small{display:block;font-weight:600;font-size:.65rem;color:var(--mute)}
+.tile.rest{opacity:0.4;background:var(--bg)}.tile.on{background:linear-gradient(135deg, var(--accent), #059669);color:#fff;border-color:var(--accent);opacity:1;transform:scale(1.05);box-shadow:0 4px 12px rgba(16,185,129,0.3)}.tile.on small{color:rgba(255,255,255,0.8)}
+.msg{padding:12px 16px;border-radius:14px;margin:10px 0;white-space:pre-wrap;font-size:0.95rem;line-height:1.6}.msg.u{background:var(--soft);align-self:flex-start;border-bottom-right-radius:2px;border:1px solid var(--line)}.msg.a{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:2px;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
+#msgs{display:flex;flex-direction:column;gap:4px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}.chips button{width:auto;margin:0;padding:8px 14px;font-weight:700;font-size:.85rem;border-radius:10px;background:var(--soft)}
+</style>
+</head>
+<body>
+<main>
+<div class="brand"><svg viewBox="0 0 120 120" role="img" aria-label="Apex Fit"><rect width="120" height="120" rx="28" fill="#0f7a55"/><path d="M24 98 L60 24 L96 98" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><line x1="25" y1="72" x2="95" y2="72" stroke="#7ff0c2" stroke-width="7" stroke-linecap="round"/><rect x="15" y="59" width="9" height="26" rx="3.5" fill="#7ff0c2"/><rect x="96" y="59" width="9" height="26" rx="3.5" fill="#7ff0c2"/></svg><h1>APEX<span> FIT</span></h1></div>
+<p class="sub">اكتب الطول والوزن وباقي البيانات، وهتطلع لك نسبة الدهون التقريبية والسعرات اللي محتاجها وخطة تمارين.</p>
+<div class="authrow" id="authrow"><span id="who"></span><button id="authbtn" type="button" class="ghost">تسجيل الدخول</button></div>
+<section class="card" id="authcard" style="display:none">
+<h2>تسجيل الدخول</h2>
+<div class="grid"><div><label for="em">الإيميل</label><input id="em" type="email" dir="ltr" autocomplete="email"></div><div><label for="pw">الباسورد</label><input id="pw" type="password" dir="ltr" autocomplete="current-password"></div></div>
+<button id="signin" type="button">دخول</button>
+<button id="signup" type="button" class="ghost">إنشاء حساب جديد</button>
+<button id="google" type="button" class="ghost">الدخول بحساب Google</button>
+<p id="autherr" role="alert" class="note"></p>
+</section>
+
+<section class="card">
+<div class="grid">
+<div><label for="sex">النوع</label><select id="sex"><option value="m">ذكر</option><option value="f">أنثى</option></select></div>
+<div><label for="age">السن</label><input id="age" type="number" inputmode="numeric" min="15" max="90" placeholder="30"></div>
+<div><label for="h">الطول (سم)</label><input id="h" type="number" inputmode="decimal" min="120" max="220" placeholder="175"></div>
+<div><label for="w">الوزن (كجم)</label><input id="w" type="number" inputmode="decimal" min="35" max="250" placeholder="85"></div>
+<div class="full"><label for="act">مستوى النشاط اليومي</label>
+<select id="act">
+<option value="1.2">قليل (شغل مكتبي، مفيش رياضة)</option>
+<option value="1.375" selected>خفيف (رياضة 1 إلى 3 أيام في الأسبوع)</option>
+<option value="1.55">متوسط (رياضة 3 إلى 5 أيام)</option>
+<option value="1.725">عالي (رياضة 6 إلى 7 أيام)</option>
+</select></div>
+<div class="full"><label for="goal">الهدف</label>
+<select id="goal"><option value="lose">تنزيل دهون</option><option value="keep">ثبات الوزن</option><option value="gain">زيادة عضلات ووزن</option></select></div>
+</div>
+<button id="go" type="button">احسب</button>
+<p id="err" role="alert"></p>
+</section>
+
+<div id="out">
+<section class="card">
+<h2>نسبة الدهون التقريبية</h2>
+<div class="big"><b id="bf"></b><span id="bfcat"></span></div>
+<div class="stats">
+<div class="stat"><small>مؤشر كتلة الجسم</small><strong id="bmi"></strong></div>
+<div class="stat"><small>كمية الدهون</small><strong id="fm"></strong></div>
+<div class="stat"><small>الكتلة بدون دهون</small><strong id="lm"></strong></div>
+<div class="stat"><small>الوزن المثالي (تقريبي)</small><strong id="ideal"></strong></div>
+</div>
+</section>
+
+<section class="card">
+<h2>السعرات اليومية</h2>
+<div class="big"><b id="target"></b><span>سعر حراري في اليوم (هدفك)</span></div>
+<div class="stats">
+<div class="stat"><small>الحرق الأساسي (BMR)</small><strong id="bmr"></strong></div>
+<div class="stat"><small>الحرق الكلي مع النشاط</small><strong id="tdee"></strong></div>
+<div class="stat"><small>بروتين</small><strong id="pro"></strong></div>
+<div class="stat"><small>كربوهيدرات / دهون</small><strong id="cf"></strong></div>
+</div>
+<p class="note" id="eta"></p>
+</section>
+
+<section class="card">
+<h2>التمارين المقترحة</h2>
+<div class="tw"><table><tbody id="plan"></tbody></table></div>
+<ul id="tips" style="margin-top:12px"></ul>
+</section>
+
+<section class="card" id="ctr">
+<h2>عدّاد التمرين</h2>
+<div class="cbox"><small>التكرارات</small><div class="cnum" id="reps">٠</div><small id="setl">المجموعة ١</small></div>
+<div class="row"><button id="rp" type="button">+١ تكرار</button><button id="rm" type="button" class="ghost">-١</button></div>
+<button id="setdone" type="button" class="ghost">خلّصت المجموعة</button>
+<div class="cbox" style="margin-top:18px"><small>مؤقت الراحة أو الثبات</small><div class="cnum" id="tm">٠٠:٣٠</div></div>
+<div class="pre" id="tpre"><button type="button" class="ghost" data-s="20">20 ث</button><button type="button" class="ghost" data-s="30">30 ث</button><button type="button" class="ghost" data-s="45">45 ث</button><button type="button" class="ghost" data-s="60">60 ث</button><button type="button" class="ghost" data-s="90">90 ث</button><button type="button" class="ghost" data-s="120">دقيقتين</button></div>
+<div class="row"><button id="tgo" type="button">ابدأ</button><button id="trs" type="button" class="ghost">إعادة</button></div>
+<label style="margin-top:12px"><input type="checkbox" id="auto" checked style="width:auto;margin-inline-end:6px">ابدأ الراحة تلقائيًا بعد كل مجموعة</label>
+<button id="ctrreset" type="button" class="ghost">تصفير الكل</button>
+</section>
+<div class="ad" id="ad1"></div>
+<section class="card" id="paywall">
+<span class="badge">PRO</span>
+<h2>افتح الخطة المتقدمة</h2>
+<ul><li>خطة أكل يومية مفصلة: وجبات وسعرات وبروتين لكل وجبة</li><li>جداول تمارين بالتفصيل: التمرين والعدد والتكرار</li><li>تتبع تقدمك بالوزن والوسط مع رسم بياني</li><li>كاليسثنكس وبيت وجيم، 3 مستويات، و4 أشكال جسم</li><li>مدرب بالكاميرا بيعدّ التكرارات وبيصحّح الحركة</li><li>تحدي 30 يوم وقائمة مشتريات وتذكير بالتمرين</li></ul>
+<label for="plansel" style="margin-top:12px">اختار مدة الاشتراك</label>
+<select id="plansel" style="margin-bottom:12px"><option value="m1">شهر واحد: 99 جنيه</option><option value="m3">3 شهور: 249 جنيه</option><option value="y1">سنة كاملة: 899 جنيه</option></select>
+<a id="sub" class="btn" href="#" target="_blank" rel="noopener">اشترك الآن (بدون إعلانات)</a>
+<button id="trial" type="button" class="ghost">ابدأ تجربة مجانية 7 أيام (مع إعلانات)</button>
+<p id="planmsg" class="note"></p>
+<label for="code" style="margin-top:14px">عندك كود تفعيل؟</label>
+<div class="row"><input id="code" placeholder="اكتب الكود" autocomplete="off"><button id="act2" type="button">فعّل</button></div>
+<p id="codeErr" role="alert" class="note"></p>
+</section>
+<div id="premium" style="display:none">
+<p id="planbar" class="note" style="margin:0 0 10px"></p>
+<a id="sub2" class="btn" href="#" target="_blank" rel="noopener" style="display:none;margin-bottom:12px">اشترك وشيل الإعلانات</a>
+<div class="ad" id="ad2"></div>
+<section class="card"><span class="badge">PRO</span><h2>خطة الأكل اليومية</h2><div id="meals"></div><p class="note">الأرقام لكل وجبة تقريبية. اختار أي بديل من الوجبة، وزوّد أو قلّل الرز والعيش عشان توصل لعدد السعرات.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>اختار نظامك</h2>
+<div class="grid">
+<div><label for="stl">نوع التمرين</label><select id="stl"><option value="cali">كاليسثنكس (وزن الجسم)</option><option value="home">بيت (دمبل وأدوات بسيطة)</option><option value="gym">جيم</option></select></div>
+<div><label for="lvl">المستوى</label><select id="lvl"><option value="beg">مبتدئ</option><option value="int">متوسط</option><option value="adv">متقدم</option></select></div>
+<div class="full"><label for="shp">شكل الجسم</label><select id="shp"><option value="ath">عضلي رياضي</option><option value="ton">نحيف مشدود (Toned)</option><option value="bulk">ضخم (Bulk)</option><option value="lithe">رشيق وقوي للسيدات</option></select></div>
+</div><p id="shnote" class="note"></p></section>
+<section class="card"><span class="badge">PRO</span><h2>جدول التمارين التفصيلي</h2><div id="wk"></div><p class="note">لما توصل لأعلى عدد تكرارات في كل المجموعات، زوّد الوزن شوية في التمرينة الجاية.</p></section>
+<section class="card" id="camcard"><span class="badge">PRO</span><h2>مدرب الكاميرا</h2>
+<p class="note" style="margin-top:0">الكاميرا بتعدّ تكراراتك وتقول لك لو الحركة غلط. الفيديو بيتحلل على موبايلك نفسه ومابيتبعتش لأي مكان.</p>
+<label for="cex">التمرين</label>
+<select id="cex"><option value="squat">سكوات</option><option value="pushup">ضغط</option><option value="plank">بلانك</option></select>
+<p class="note" id="camtip"></p>
+<div class="camwrap" id="camwrap" style="display:none"><video id="cam" playsinline muted></video><canvas id="camcv"></canvas></div>
+<div class="cbox"><small id="camlbl">التكرارات</small><div class="cnum" id="camreps">٠</div><div id="camfb" class="note" role="status"></div></div>
+<div class="row"><button id="camgo" type="button">شغّل الكاميرا</button><button id="camrs" type="button" class="ghost">تصفير</button></div>
+<p class="note">التقييم تقريبي ومش بديل لمدرب. اتمرن بحذر، واقف لو حسيت بألم. الإضاءة الكويسة وظهور جسمك كله في الكادر بيحسّنوا الدقة.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>تحدي 30 يوم</h2>
+<p class="note" style="margin-top:0" id="chcount"></p>
+<div class="chg" id="chgrid"></div>
+<ul style="margin-top:12px"><li>الأسبوع الأول: اتعلم التكنيك بوزن خفيف.</li><li>الأسبوع التاني: زوّد تكرارتين في كل مجموعة.</li><li>الأسبوع التالت: زوّد مجموعة أو وزن.</li><li>الأسبوع الرابع: اختبر نفسك، ويوم زيادة راحة لو تعبت.</li></ul>
+<p class="note">اضغط على اليوم لما تخلّصه.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>قائمة المشتريات الأسبوعية</h2>
+<div class="tw"><table><tbody id="shop"></tbody></table></div>
+<p class="note">كميات تقريبية لأسبوع حسب سعراتك وماكروزك.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>تذكير بالتمرين</h2>
+<label for="rt">وقت التمرين</label><input id="rt" type="time" value="18:00">
+<button id="rtbtn" type="button">نزّل التذكير للتقويم</button>
+<p class="note">بيتفتح في تقويم الموبايل ويتكرر في أيام تمرينك مع تنبيه قبلها بـ 10 دقايق.</p></section>
+<section class="card"><span class="badge">PRO</span><h2>تتبع التقدم</h2>
+<div class="grid"><div><label for="lw">وزنك النهاردة (كجم)</label><input id="lw" type="number" inputmode="decimal" step="0.1"></div><div><label for="lwa">محيط الوسط (سم، اختياري)</label><input id="lwa" type="number" inputmode="decimal" step="0.5"></div></div>
+<button id="addlog" type="button">سجّل</button>
+<div id="chart"></div><div class="tw"><table><tbody id="logt"></tbody></table></div>
+<button id="dellog" type="button" class="ghost">امسح آخر تسجيل</button>
+<p class="note">البيانات بتتحفظ على جهازك انت بس.</p></section>
+<section class="card" id="aicard"><span class="badge">PRO</span><h2>مساعدك الذكي</h2>
+<p class="note" style="margin-top:0">اسأل عن أكلك وتمارينك وهيجاوبك حسب بياناتك اللي حسبناها.</p>
+<div class="chips"><button type="button" class="ghost" data-q="اقترح لي بدائل للرز والعيش بسعرات أقل">بدائل للرز والعيش</button><button type="button" class="ghost" data-q="إزاي أبدأ التمرين لو أنا مبتمرنش من فترة؟">أبدأ إزاي؟</button><button type="button" class="ghost" data-q="الوزن وقف ومبقاش ينزل، أعمل إيه؟">الوزن وقف</button></div>
+<div id="msgs" aria-live="polite"></div>
+<div class="row"><input id="q" placeholder="اكتب سؤالك..." autocomplete="off"><button id="ask" type="button">اسأل</button></div>
+<p class="note">إجابات عامة مش بديل للدكتور أو أخصائي التغذية.</p></section>
+</div>
+<p class="note">الأرقام تقديرية: نسبة الدهون محسوبة من الطول والوزن والسن والنوع، فممكن تختلف عن القياس الحقيقي (جهاز InBody أو قياس طيات الجلد). مش بديل لاستشارة دكتور أو أخصائي تغذية، خصوصًا لو عندك مرض مزمن أو بتاخد أدوية.</p>
+</div>
+<p class="credit">من شركة <strong>Apex</strong> • اتعمل بواسطة <strong>محمود رشدي</strong></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const n=(x,d=0)=>Number(x).toLocaleString('ar-EG',{maximumFractionDigits:d,minimumFractionDigits:d});
+function cat(bf,m){
+  const r=m?[[6,'دهون أساسية'],[14,'رياضي'],[18,'لياقة جيدة'],[25,'متوسط'],[100,'مرتفع']]:[[14,'دهون أساسية'],[21,'رياضية'],[25,'لياقة جيدة'],[32,'متوسط'],[100,'مرتفع']];
+  return r.find(x=>bf<x[0])[1];
+}
+const PAY_URL='https://paymob.link/gINwy';/* حط هنا رابط الدفع بتاعك */
+const CODE='PRO-2026';/* كود تجريبي، غيّره */
+let S=null;
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const ADSENSE_CLIENT='';/* مثال: ca-pub-1234567890123456 */
+const ADSENSE_SLOT='';/* رقم وحدة الإعلان من AdSense */
+const TRIAL_DAYS=7;
+function trialLeft(){const t=+ls.get('fc_trial');return t?Math.max(0,Math.ceil((t+TRIAL_DAYS*864e5-Date.now())/864e5)):0}
+let proUntil=0;
+function plan(){return (ls.get('fc_pro')==='1'||proUntil>Date.now())?'pro':trialLeft()>0?'trial':'free'}
+const isPro=()=>plan()!=='free';
+const MEALS=[['الفطار',.25,'فول بزيت قليل + بيضتين مسلوقين + نص رغيف بلدي','أو: زبادي + شوفان + موزة + ملعقة زبدة فول سوداني'],['الغدا',.35,'صدور فراخ مشوية + رز أو مكرونة + خضار سوتيه + سلطة','أو: سمك مشوي + بطاطس مسلوقة + سلطة'],['سناك',.12,'زبادي يوناني + حبة فاكهة + حفنة مكسرات','أو: تونة + عيش + خيار'],['العشا',.28,'جبنة قريش + خيار وطماطم + رغيف بلدي صغير','أو: عدس أو شوربة خضار + بيضتين']];
+const J={
+ A:['سكوات 3×12','ضغط صدر دمبل 3×10','تجديف دمبل 3×12','بلانك 3×30 ثانية'],
+ B:['رومانيان ديدليفت 3×10','ضغط كتف 3×10','سحب أمامي 3×12','لانجز 3×10 لكل رجل'],
+ C:['ليج بريس 3×12','ضغط صدر مائل 3×10','تجديف كابل 3×12','رفع رجل للبطن 3×12'],
+ H:['إحماء 5 دقائق','HIIT: 30 ثانية سريع + 60 ثانية بطيء × 10 جولات','مشي هادي 10 دقائق'],
+ W:['مشي سريع 40 إلى 60 دقيقة'],
+ PU:['بنش برس 4×8','ضغط كتف 3×10','ضغط مائل دمبل 3×10','رفرفة جانبي 3×15','تراي كابل 3×12'],
+ PL:['سحب أمامي 4×10','تجديف بار 4×8','سحب وجه 3×15','باي دمبل 3×10','باي مطرقة 3×12'],
+ LG:['سكوات 4×8','ليج بريس 3×12','رومانيان 3×10','سمانة 4×15','بلانك 3×45 ثانية']};
+const WK={
+ lose:[['السبت','مقاومة A',J.A],['الأحد','مشي',J.W],['الاثنين','مقاومة B',J.B],['الأربعاء','مقاومة C',J.C],['الخميس','كارديو متقطع',J.H]],
+ keep:[['السبت','مقاومة A',J.A],['الأحد','كارديو متوسط 30 دقيقة',['جري خفيف أو عجلة أو سباحة']],['الاثنين','مقاومة B',J.B],['الأربعاء','مقاومة C',J.C],['الخميس','رياضة بتحبها 30 دقيقة',['كورة، سباحة، أو مشي سريع']]],
+ gain:[['السبت','دفع',J.PU],['الأحد','سحب',J.PL],['الاثنين','رجل',J.LG],['الأربعاء','دفع',J.PU],['الخميس','سحب',J.PL]]};
+function renderPro(){
+ const p=isPro();
+ $('paywall').style.display=p?'none':'block';
+ $('premium').style.display=p?'block':'none';
+ renderAds();renderPlanUI();
+ if(!p||!S)return;
+ $('meals').innerHTML=MEALS.map(m=>{const k=Math.round(S.target*m[1]/10)*10;return '<div class="meal"><h3>'+m[0]+' <small>'+n(k)+' سعر، بروتين '+n(S.p*m[1])+' جم، كارب '+n(S.c*m[1])+' جم، دهون '+n(S.f*m[1])+' جم</small></h3><div>'+m[2]+'</div><small>'+m[3]+'</small></div>'}).join('');
+ $('wk').innerHTML=WK[S.goal].map(d=>'<div class="day"><h3>'+d[0]+': '+d[1]+'</h3><ul>'+d[2].map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('');
+ renderLog();renderExtra();
+}
+(function(){
+ let reps=0,set=1,base=30,left=30,run=null;
+ const AD='٠١٢٣٤٥٦٧٨٩',ar=s=>String(s).replace(/\d/g,d=>AD[d]);
+ const fmt=s=>ar(String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'));
+ function draw(){$('reps').textContent=ar(reps);$('setl').textContent='المجموعة '+ar(set);$('tm').textContent=fmt(left)}
+ function beep(){
+  try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.2;o.start();setTimeout(()=>{o.stop();a.close()},600)}catch(e){}
+  try{if(navigator.vibrate)navigator.vibrate([300,100,300])}catch(e){}
+ }
+ function stop(){if(run){clearInterval(run);run=null}$('tgo').textContent='ابدأ'}
+ function start(){
+  stop();if(left<=0)left=base;
+  const end=Date.now()+left*1000;$('tgo').textContent='إيقاف مؤقت';
+  run=setInterval(()=>{left=Math.max(0,Math.round((end-Date.now())/1000));draw();if(left<=0){stop();beep()}},250);
+ }
+ $('rp').onclick=()=>{reps++;draw();try{if(navigator.vibrate)navigator.vibrate(20)}catch(e){}};
+ $('rm').onclick=()=>{reps=Math.max(0,reps-1);draw()};
+ $('setdone').onclick=()=>{set++;reps=0;if($('auto').checked){left=base;start()}draw()};
+ $('tpre').onclick=e=>{const b=e.target.closest('button');if(!b)return;base=+b.dataset.s;left=base;stop();draw()};
+ $('tgo').onclick=()=>{if(run)stop();else start()};
+ $('trs').onclick=()=>{stop();left=base;draw()};
+ $('ctrreset').onclick=()=>{stop();reps=0;set=1;left=base;draw()};
+ draw();
+})();
+(function(){
+ const LIB='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+ const MODEL_URL='https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+ const AD='٠١٢٣٤٥٦٧٨٩',ar=s=>String(s).replace(/\d/g,d=>AD[d]);
+ const TIPS={squat:'حط الموبايل على بعد حوالي 2 متر، وخلّي جسمك كله ظاهر من الراس للرجل.',pushup:'حط الموبايل على الأرض من جنبك، وخلّي جسمك كله ظاهر من الراس للرجل.',plank:'حط الموبايل على الأرض من جنبك، وخلّي جسمك كله ظاهر من الراس للرجل.'};
+ const LINKS=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28]];
+ const C={pl:null,on:false,stream:null,lt:-1,stage:'up',minA:180,reps:0,hold:0,last:0,sm:{}};
+ const sm=(k,v)=>C.sm[k]=C.sm[k]==null?v:C.sm[k]*.6+v*.4;
+ const vib=()=>{try{if(navigator.vibrate)navigator.vibrate(60)}catch(e){}};
+ function fb(t,good){$('camfb').textContent=t;$('camfb').className='note '+(good?'fbok':'fbwarn')}
+ function show(){const p=$('cex').value==='plank';$('camlbl').textContent=p?'ثواني الثبات':'التكرارات';$('camreps').textContent=ar(p?Math.floor(C.hold):C.reps)}
+ function resetCam(){C.stage='up';C.minA=180;C.reps=0;C.hold=0;C.sm={};show()}
+ function ang(a,b,c){const x1=a.x-b.x,y1=a.y-b.y,x2=c.x-b.x,y2=c.y-b.y,m=Math.hypot(x1,y1)*Math.hypot(x2,y2);return m?Math.acos(Math.max(-1,Math.min(1,(x1*x2+y1*y2)/m)))*180/Math.PI:180}
+ function analyze(L,vw,vh,dt){
+  const ex=$('cex').value,P=i=>({x:L[i].x*vw,y:L[i].y*vh}),V=i=>L[i].visibility||0;
+  const pick=(a,b)=>{const s=x=>x.reduce((t,i)=>t+V(i),0)/x.length;return s(a)>=s(b)?a:b};
+  const vis=c=>c.every(i=>V(i)>.5),A=c=>ang(P(c[0]),P(c[1]),P(c[2]));
+  const sag=b=>{const s=P(b[0]),h=P(b[1]),a=P(b[2]),dx=a.x-s.x;return Math.abs(dx)<20?0:h.y-(s.y+(h.x-s.x)/dx*(a.y-s.y))};
+  if(ex==='squat'){
+   const c=pick([23,25,27],[24,26,28]);
+   if(!vis(c))return fb('ابعد شوية وخلّي جسمك كله ظاهر',false);
+   const k=sm('k',A(c)),t=pick([11,23],[12,24]),s=P(t[0]),h=P(t[1]),lean=Math.atan2(Math.abs(s.x-h.x),h.y-s.y)*180/Math.PI;
+   if(C.stage==='up'&&k<150){C.stage='down';C.minA=k}
+   if(C.stage==='down'){
+    C.minA=Math.min(C.minA,k);
+    if(k>160){C.stage='up';if(C.minA<=110){C.reps++;vib();fb('عدّة سليمة، كمّل!',true)}else fb('انزل أكتر عشان العدّة تتحسب',false)}
+    else if(lean>60)fb('ظهرك مايل لقدام، اشدّ صدرك',false);
+    else if(k<=110)fb('عمق ممتاز، اطلع',true);
+    else fb('كمّل نزول',true);
+   }else fb('جاهز، ابدأ النزول',true);
+  }else{
+   const b=pick([11,23,27],[12,24,28]);
+   if(!vis(b))return fb('خلّي جسمك كله ظاهر من الجنب',false);
+   const body=sm('b',A(b)),sg=sag(b),bad=body<155;
+   const msg=bad?(sg>0?'ارفع حوضك، ظهرك واطي':'نزّل حوضك، مرفوع زيادة'):'';
+   if(ex==='plank'){
+    if(!bad){C.hold+=dt;fb('ثبات ممتاز، كمّل',true)}else fb(msg,false);
+   }else{
+    const c=pick([11,13,15],[12,14,16]);
+    if(!vis(c))return fb('خلّي دراعك ظاهر في الكادر',false);
+    const e=sm('e',A(c));
+    if(C.stage==='up'&&e<130){C.stage='down';C.minA=e}
+    if(C.stage==='down'){
+     C.minA=Math.min(C.minA,e);
+     if(e>155){C.stage='up';if(C.minA<=100){C.reps++;vib();fb('عدّة سليمة، كمّل!',true)}else fb('انزل أكتر عشان العدّة تتحسب',false)}
+     else if(bad)fb(msg,false);
+     else fb(e<=100?'نزلة ممتازة، اطلع':'كمّل نزول',true);
+    }else if(bad)fb(msg,false);else fb('جاهز، ابدأ النزول',true);
+   }
+  }
+ }
+ function draw(L,vw,vh){
+  const cv=$('camcv'),g=cv.getContext('2d');if(cv.width!==vw){cv.width=vw;cv.height=vh}
+  g.clearRect(0,0,vw,vh);g.lineWidth=4;g.strokeStyle='#3fd49b';g.fillStyle='#fff';
+  LINKS.forEach(([a,b])=>{if((L[a].visibility||0)>.5&&(L[b].visibility||0)>.5){g.beginPath();g.moveTo(L[a].x*vw,L[a].y*vh);g.lineTo(L[b].x*vw,L[b].y*vh);g.stroke()}});
+  [11,12,13,14,15,16,23,24,25,26,27,28].forEach(i=>{if((L[i].visibility||0)>.5){g.beginPath();g.arc(L[i].x*vw,L[i].y*vh,5,0,7);g.fill()}});
+ }
+ function loop(){
+  if(!C.on)return;
+  const v=$('cam');
+  if(v.readyState>=2&&v.currentTime!==C.lt){
+   C.lt=v.currentTime;
+   const now=performance.now(),dt=Math.min(.2,(now-C.last)/1000);C.last=now;
+   try{
+    const r=C.pl.detectForVideo(v,now),L=r.landmarks&&r.landmarks[0];
+    if(L){draw(L,v.videoWidth,v.videoHeight);analyze(L,v.videoWidth,v.videoHeight,dt)}
+    else{const cv=$('camcv');cv.getContext('2d').clearRect(0,0,cv.width,cv.height);fb('مش شايفك، ادخل في الكادر',false)}
+   }catch(e){}
+   show();
+  }
+  requestAnimationFrame(loop);
+ }
+ async function loadPose(){
+  if(C.pl)return;
+  const m=await import(LIB+'/+esm');
+  const fs=await m.FilesetResolver.forVisionTasks(LIB+'/wasm');
+  const opt=d=>({baseOptions:{modelAssetPath:MODEL_URL,delegate:d},runningMode:'VIDEO',numPoses:1});
+  try{C.pl=await m.PoseLandmarker.createFromOptions(fs,opt('GPU'))}catch(e){C.pl=await m.PoseLandmarker.createFromOptions(fs,opt('CPU'))}
+ }
+ function stopCam(){C.on=false;if(C.stream){C.stream.getTracks().forEach(t=>t.stop());C.stream=null}$('camwrap').style.display='none';$('camgo').textContent='شغّل الكاميرا'}
+ async function startCam(){
+  $('camgo').disabled=true;fb('جاري تحميل نموذج الكاميرا (أول مرة بس)...',true);
+  try{
+   await loadPose();
+   C.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false});
+   const v=$('cam');v.srcObject=C.stream;await v.play();
+   $('camwrap').style.display='block';C.on=true;C.last=performance.now();C.lt=-1;resetCam();
+   $('camgo').textContent='إيقاف الكاميرا';fb('جاهز، خلّي جسمك كله ظاهر',true);loop();
+  }catch(e){
+   const nm=e&&e.name;
+   fb(nm==='NotAllowedError'?'لازم تسمح للكاميرا من إعدادات المتصفح.':nm==='NotFoundError'?'مفيش كاميرا على الجهاز.':'تعذّر تشغيل الكاميرا هنا. الميزة دي بتشتغل على موقعك الأساسي.',false);
+  }
+  $('camgo').disabled=false;
+ }
+ $('camgo').onclick=()=>{if(C.on)stopCam();else startCam()};
+ $('camrs').onclick=resetCam;
+ $('cex').onchange=()=>{resetCam();$('camtip').textContent=TIPS[$('cex').value];fb('',true)};
+ document.addEventListener('visibilitychange',()=>{if(document.hidden&&C.on)stopCam()});
+ $('camtip').textContent=TIPS.squat;show();
+})();
+(function(){
+ const q=new URLSearchParams(location.search);
+ if(q.get('lock')!=='1')return;
+ const ex=['squat','pushup','plank'].indexOf(q.get('ex'))>-1?q.get('ex'):'squat';
+ const goal=Math.max(1,parseInt(q.get('n'),10)||(ex==='plank'?30:10));
+ const names={squat:'سكوات',pushup:'ضغط',plank:'بلانك'};
+ const wrap=document.createElement('main');
+ wrap.style.cssText='max-width:720px;margin:0 auto;padding:16px';
+ const bar=document.createElement('section');bar.className='card';
+ bar.innerHTML='<h2>اعمل تمرينك الأول</h2><p id="lockmsg" class="note" style="margin:0"></p><div class="cbox"><div class="cnum" id="lockprog"></div></div><div class="row"><button id="lockgrace" type="button" class="ghost">طوارئ: 5 دقايق</button><button id="lockskip" type="button" class="ghost" disabled>تخطي النهاردة</button></div>';
+ const card=$('camcard');
+ document.querySelector('main').style.display='none';
+ document.body.prepend(wrap);wrap.appendChild(bar);wrap.appendChild(card);
+ card.querySelector('.badge').style.display='none';
+ $('cex').value=ex;$('cex').disabled=true;$('cex').onchange();
+ $('camrs').style.display='none';
+ $('lockmsg').textContent='المطلوب: '+goal+(ex==='plank'?' ثانية ثبات في ':' تكرار ')+names[ex]+'. التطبيقات هتتفتح أول ما تخلّص. شغّل الكاميرا وابدأ.';
+ const dig=s=>parseInt(String(s).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)),10)||0;
+ let done=false;
+ const t=setInterval(()=>{
+  const v=dig($('camreps').textContent);
+  $('lockprog').textContent=v+' / '+goal;
+  if(!done&&v>=goal){
+   done=true;clearInterval(t);
+   if($('camgo').textContent.indexOf('إيقاف')>-1)$('camgo').click();
+   $('lockmsg').textContent='خلّصت! برافو، التطبيقات اتفتحت.';
+   try{if(window.Android)Android.workoutDone()}catch(e){}
+  }
+ },300);
+ $('lockgrace').onclick=()=>{try{if(window.Android)Android.grace()}catch(e){}};
+ let s=20;const sk=$('lockskip');
+ const ti=setInterval(()=>{s--;sk.textContent=s>0?'تخطي النهاردة ('+s+')':'تخطي النهاردة';if(s<=0){sk.disabled=false;clearInterval(ti)}},1000);
+ sk.onclick=()=>{try{if(window.Android)Android.skipToday()}catch(e){}};
+})();
+let adsLoaded=false;
+function renderAds(){
+ const show=plan()!=='pro';
+ document.querySelectorAll('.ad').forEach(el=>{
+  el.style.display=show?'block':'none';
+  if(!show||el.dataset.done)return;
+  el.dataset.done='1';
+  if(ADSENSE_CLIENT&&ADSENSE_SLOT){
+   if(!adsLoaded){adsLoaded=true;const s=document.createElement('script');s.async=true;s.crossOrigin='anonymous';s.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+ADSENSE_CLIENT;document.head.appendChild(s)}
+   el.innerHTML='<ins class="adsbygoogle" style="display:block" data-ad-client="'+ADSENSE_CLIENT+'" data-ad-slot="'+ADSENSE_SLOT+'" data-ad-format="auto" data-full-width-responsive="true"></ins>';
+   try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}
+  }else el.innerHTML='<small>إعلان</small><div>مساحة إعلان تجريبية (Google AdSense)</div>';
+ });
+}
+function renderPlanUI(){
+ const pl=plan(),t=trialLeft(),started=!!+ls.get('fc_trial');
+ $('trial').style.display=(pl==='free'&&!started)?'block':'none';
+ $('planmsg').textContent=(pl==='free'&&started)?'التجربة المجانية خلصت. اشترك عشان تكمل من غير إعلانات.':'';
+ $('planbar').textContent=pl==='pro'?(proUntil>Date.now()?'اشتراك PRO فعّال لحد '+new Date(proUntil).toLocaleDateString('ar-EG')+'، من غير إعلانات.':'اشتراك PRO فعّال، من غير إعلانات.'):pl==='trial'?'تجربة مجانية: فاضل '+n(t)+' يوم ومعاها إعلانات. اشترك عشان تشيلها.':'';
+ $('sub2').style.display=pl==='trial'?'block':'none';
+}
+$('trial').onclick=()=>{if(!+ls.get('fc_trial'))ls.set('fc_trial',String(Date.now()));renderPro()};
+$('sub2').onclick=startCheckout;
+const EX={
+cali:{push:['ضغط على الركب أو مائل','ضغط عادي','ديبس على كرسي أو بارالل','ضغط دايموند','ضغط Pike للكتف','ضغط Archer'],pull:['تجديف تحت طاولة','سحب سلبي (Negative Pull-up)','Pull-up','Chin-up','Pull-up بتوقف 3 ثواني','تدريب Muscle-up'],legs:['سكوات بوزن الجسم','لانجز','سكوات بلغاري','Glute Bridge برجل واحدة','Shrimp Squat','Pistol Squat'],core:['~بلانك','رفع رجل','~Hollow Hold','~L-sit','Hanging Leg Raise','تدريب Dragon Flag']},
+home:{push:['ضغط','ضغط كتف دمبل','ضغط صدر دمبل على الأرض','ديبس كرسي','ضغط مائل','Arnold Press'],pull:['تجديف دمبل','تجديف دمبل برجل واحدة','Reverse Fly دمبل','باي دمبل','Pull-up على بار الباب','سحب بفوطة على الباب'],legs:['Goblet Squat','Glute Bridge','لانجز دمبل','رومانيان دمبل','سكوات بلغاري دمبل','Step-up على كرسي'],core:['~بلانك','Dead Bug','رفع رجل','Russian Twist','~Side Plank','Mountain Climbers']},
+gym:{push:['ضغط صدر ماشين','بنش برس','ضغط كتف','ضغط مائل دمبل','رفرفة جانبي','تراي كابل'],pull:['سحب أمامي','تجديف كابل','تجديف بار','سحب وجه','باي بار','باي مطرقة'],legs:['ليج بريس','سكوات','رومانيان ديدليفت','Leg Curl','لانجز','سمانة'],core:['~بلانك','كرانش كابل','رفع رجل','Ab Wheel','Pallof Press','Hanging Leg Raise']}};
+const FULL={t:'جسم كامل',g:[['push',1],['pull',1],['legs',2],['core',1]]},UP={t:'جزء علوي',g:[['push',2],['pull',2],['core',1]]},LO={t:'جزء سفلي',g:[['legs',3],['core',1]]},PU={t:'دفع',g:[['push',4],['core',1]]},PL={t:'سحب',g:[['pull',4],['core',1]]},LG={t:'رجل',g:[['legs',4],['core',1]]};
+const SC={beg:[['السبت',FULL],['الاثنين',FULL],['الأربعاء',FULL]],int:[['السبت',UP],['الأحد',LO],['الثلاثاء',UP],['الخميس',LO]],adv:[['السبت',PU],['الأحد',PL],['الاثنين',LG],['الأربعاء',PU],['الخميس',PL],['الجمعة',LG]]};
+const LV={beg:{sets:3,win:[0,3]},int:{sets:4,win:[1,5]},adv:{sets:4,win:[2,6]}};
+const SH={
+ath:{n:'عضلي رياضي',reps:'8-10',rest:'راحة دقيقتين بين المجموعات',delta:0,pro:2,tip:'قوة وعضلات متوازنة. ركّز على التمارين الأساسية وزوّد الحمل تدريجيًا.',add:['كارديو خفيف 15 دقيقة مرتين في الأسبوع']},
+ton:{n:'نحيف مشدود',reps:'12-15',rest:'راحة 45 ثانية بين المجموعات',delta:-300,pro:2,tip:'شد وتنشيف مع الحفاظ على العضلات. تكرارات أعلى وراحة أقصر.',add:['كارديو 20 دقيقة بعد التمرين 3 مرات في الأسبوع']},
+bulk:{n:'ضخم (Bulk)',reps:'6-10',rest:'راحة من 2 لـ 3 دقايق بين المجموعات',delta:400,pro:1.8,tip:'زيادة حجم وقوة. سعرات أعلى من حرقك وأوزان تقيلة بتكنيك سليم.',add:['مجموعة إضافية للعضلة اللي عايز تكبّرها في أي يوم']},
+lithe:{n:'رشيق وقوي للسيدات',reps:'10-15',rest:'راحة 60 ثانية بين المجموعات',delta:-200,pro:1.8,tip:'جسم مشدود وقوي مع تركيز على الرجل والأرداف والبطن.',add:['Hip Thrust أو Glute Bridge 4×12','رفع رجل جانبي 3×15 لكل رجل']}};
+function exLine(x,s,r){return x[0]==='~'?x.slice(1)+' '+s+'×30 ثانية':x+' '+s+'×'+r}
+function genPlan(st,lv,sh){
+ const L=LV[lv],reps=(st==='cali'&&lv==='adv')?'5-8':SH[sh].reps;
+ return SC[lv].map(d=>[d[0],d[1].t,d[1].g.flatMap(([g,k])=>EX[st][g].slice(L.win[0],L.win[1]).slice(0,k).map(x=>exLine(x,g==='core'?3:L.sets,g==='core'?'15':reps)))]);
+}
+function cur(){
+ const h=SH[$('shp').value];if(!h||!S)return S;
+ const t=Math.max(S.m?1500:1200,Math.round((S.tdee+h.delta)/10)*10),p=Math.round(S.w*h.pro),f=Math.round(t*.27/9),c=Math.max(0,Math.round((t-p*4-f*9)/4));
+ return Object.assign({},S,{target:t,p,c,f});
+}
+function getCh(){try{return JSON.parse(ls.get('fc_ch')||'[]')}catch(e){return[]}}
+function renderCh(){
+ const pat={beg:'TRTRTRR',int:'TTRTRTR',adv:'TTTRTTT'}[$('lvl').value],d=getCh(),t=[];
+ for(let i=1;i<=30;i++){const w=pat[(i-1)%7]==='T',o=d.includes(i);t.push('<button type="button" class="tile'+(o?' on':'')+(w?'':' rest')+'" data-d="'+i+'" aria-pressed="'+o+'">'+n(i)+'<small>'+(w?'تمرين':'راحة')+'</small></button>')}
+ $('chgrid').innerHTML=t.join('');
+ $('chcount').textContent='خلّصت '+n(d.length)+' من 30 يوم';
+}
+function renderShop(C){
+ const r=(x,s)=>Math.round(x/s)*s,q=(v,u)=>n(v,v%1?1:0)+' '+u,p=C.p,c=C.c,f=C.f;
+ const it=[['فراخ أو لحمة أو سمك',q(r(p*7*.4/230,.5),'كجم')],['بيض',q(Math.round(p*7*.1/6),'بيضة')],['زبادي أو جبنة قريش أو لبن',q(r(p*7*.15/80,.5),'كجم')],['رز أو مكرونة أو شوفان (جاف)',q(r(c*7*.45/750,.25),'كجم')],['بطاطس أو بطاطا',q(r(c*7*.2/170,.5),'كجم')],['عيش بلدي',q(Math.round(c*7*.2/70),'رغيف')],['فول وعدس (جاف)','٠٫٥ كجم'],['خضار وسلطة','٣ كجم'],['فاكهة','٢ كجم'],['زيت زيتون',q(r(f*7*.4/.92,50),'مل')],['مكسرات','١٥٠ جم']];
+ $('shop').innerHTML=it.map(x=>'<tr><th scope="row">'+x[0]+'</th><td>'+x[1]+'</td></tr>').join('');
+}
+function renderExtra(){
+ if(!S)return;
+ const st=$('stl').value,lv=$('lvl').value,sh=$('shp').value,H=SH[sh],C=cur();
+ $('shnote').innerHTML='<b>'+H.n+':</b> '+H.tip+'<br>سعراتك لشكل الجسم ده: <b>'+n(C.target)+'</b> سعر، بروتين '+n(C.p)+' جم، كارب '+n(C.c)+' جم، دهون '+n(C.f)+' جم.';
+ $('meals').innerHTML=MEALS.map(m=>'<div class="meal"><h3>'+m[0]+' <small>'+n(Math.round(C.target*m[1]/10)*10)+' سعر، بروتين '+n(C.p*m[1])+' جم، كارب '+n(C.c*m[1])+' جم، دهون '+n(C.f*m[1])+' جم</small></h3><div>'+m[2]+'</div><small>'+m[3]+'</small></div>').join('');
+ $('wk').innerHTML=genPlan(st,lv,sh).map(d=>'<div class="day"><h3>'+d[0]+': '+d[1]+'</h3><ul>'+d[2].map(x=>'<li>'+x+'</li>').join('')+'</ul></div>').join('')+'<ul><li>'+H.rest+'.</li>'+H.add.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+ renderCh();renderShop(C);
+}
+try{const pf=JSON.parse(ls.get('fc_pref')||'null');if(pf){$('stl').value=pf.s;$('lvl').value=pf.l;$('shp').value=pf.h}}catch(e){}
+['stl','lvl','shp'].forEach(id=>$(id).onchange=()=>{ls.set('fc_pref',JSON.stringify({s:$('stl').value,l:$('lvl').value,h:$('shp').value}));renderExtra()});
+$('chgrid').onclick=e=>{const b=e.target.closest('.tile');if(!b)return;const d=+b.dataset.d;let a=getCh();a=a.includes(d)?a.filter(x=>x!==d):a.concat(d);ls.set('fc_ch',JSON.stringify(a));renderCh()};
+$('rtbtn').onclick=()=>{
+ const days={beg:'SA,MO,WE',int:'SA,SU,TU,TH',adv:'SA,SU,MO,WE,TH,FR'}[$('lvl').value],tm=($('rt').value||'18:00').split(':'),d=new Date(),z=x=>String(x).padStart(2,'0'),ds=d.getFullYear()+z(d.getMonth()+1)+z(d.getDate());
+ const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Apex Fit//AR','BEGIN:VEVENT','UID:apexfit-'+Date.now()+'@apexfit','DTSTAMP:'+ds+'T000000Z','DTSTART:'+ds+'T'+tm[0]+tm[1]+'00','DURATION:PT45M','RRULE:FREQ=WEEKLY;BYDAY='+days,'SUMMARY:تمرين Apex Fit','BEGIN:VALARM','TRIGGER:-PT10M','ACTION:DISPLAY','DESCRIPTION:وقت التمرين','END:VALARM','END:VEVENT','END:VCALENDAR'].join('\r\n');
+ const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download='apex-fit-reminder.ics';document.body.appendChild(a);a.click();a.remove();
+};
+function getLog(){try{return JSON.parse(ls.get('fc_log')||'[]')}catch(e){return[]}}
+function renderLog(){
+ const L=getLog();
+ if(L.length>=2){
+  const W=320,H=140,pd=24,ws=L.map(x=>x.w),mn=Math.min(...ws)-1,mx=Math.max(...ws)+1;
+  const X=i=>pd+i*(W-2*pd)/(L.length-1),Y=v=>H-pd-(v-mn)*(H-2*pd)/(mx-mn);
+  $('chart').innerHTML='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="رسم بياني للوزن"><polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="'+L.map((x,i)=>X(i)+','+Y(x.w)).join(' ')+'"/>'+L.map((x,i)=>'<circle cx="'+X(i)+'" cy="'+Y(x.w)+'" r="3.5" fill="var(--accent)"/>').join('')+'<text x="4" y="14" font-size="11" fill="var(--mute)">'+mx.toFixed(0)+'</text><text x="4" y="'+(H-6)+'" font-size="11" fill="var(--mute)">'+mn.toFixed(0)+'</text></svg>';
+ }else $('chart').innerHTML='<p class="note">سجّل مرتين على الأقل عشان يظهر الرسم البياني.</p>';
+ $('logt').innerHTML=L.slice(-8).reverse().map(x=>{const d=x.w-L[0].w;return '<tr><th scope="row">'+x.d+'</th><td>'+n(x.w,1)+' كجم</td><td>'+(x.a?n(x.a,1)+' سم':'-')+'</td><td>'+(d>0?'+':'')+n(d,1)+'</td></tr>'}).join('');
+}
+let chat=[],busy=false,aiOk=null;
+async function getAI(){
+ try{if(window.claude){const s=await claude.use('sample');if(s)return s}}catch(e){}
+ if(!AI_URL)return null;
+ return async(input,o)=>{
+  if(!user)throw{code:'login'};
+  const t=await user.getIdToken();
+  const r=await fetch(AI_URL,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({messages:input})});
+  if(r.status===429)throw{code:'rate_limited'};
+  if(!r.ok){let tx='';try{const j=await r.json();tx=(j&&j.error)||''}catch(x){}throw{code:'error',status:r.status,msg:tx}}
+  const d=await r.json();
+  return{text:d.text||''};
+ };
+}
+function ctxText(){const s=S;return 'أنت مساعد لياقة وتغذية داخل تطبيق. اتكلم بالعامية المصرية البسيطة بإجابات قصيرة وعملية (أكثر شيء 5 أسطر إلا لو طلبوا شرح أكتر). بيانات المستخدم: '+(s.m?'ذكر':'أنثى')+'، السن '+s.age+'، الطول '+s.h+' سم، الوزن '+s.w+' كجم، نسبة الدهون التقريبية '+s.bf.toFixed(1)+'٪، هدفه '+({lose:'تنزيل دهون',keep:'ثبات الوزن',gain:'زيادة عضلات'}[s.goal])+'، سعراته اليومية '+s.target+' بروتين '+s.p+' جم كارب '+s.c+' جم دهون '+s.f+' جم. لا تعمل تشخيص طبي، ولو فيه أعراض أو مرض مزمن أو حمل انصحه بالدكتور. متنصحش بسعرات أقل من '+(s.m?1500:1200)+' في اليوم.'}
+async function askAI(q){
+ if(busy||!q||!S)return;
+ const ai=await getAI();
+ if(!ai){$('aicard').style.display='none';return}
+ busy=true;$('ask').disabled=true;
+ const box=$('msgs'),u=document.createElement('div');u.className='msg u';u.textContent=q;box.appendChild(u);
+ const a=document.createElement('div');a.className='msg a';a.textContent='جاري التفكير...';box.appendChild(a);
+ chat.push({role:'user',content:q});chat=chat.slice(-6);
+ if(chat[0].role!=='user')chat.shift();
+ const input=chat.map((m,i)=>i===0?{role:'user',content:ctxText()+'\n\nسؤال المستخدم: '+m.content}:m);
+ try{
+  const r=await ai(input,{cache:false,onText:e=>{a.textContent=e.text}});
+  a.textContent=r.text;chat.push({role:'assistant',content:r.text});
+ }catch(e){
+  chat.pop();
+  a.textContent=e&&e.code==='rate_limited'?'استنى شوية وجرب تاني.':e&&e.code==='login'?'سجّل دخول الأول من فوق عشان تستخدم المساعد.':e&&e.code==='not_granted'?'لازم توافق على استخدام المساعد عشان يشتغل.':e&&e.status?'حصلت مشكلة (رقم '+e.status+(e.msg?': '+e.msg:'')+')، ابعتها للمطور.':e instanceof TypeError?'مفيش اتصال بالـ Worker، راجع الرابط وإعداد ALLOWED_ORIGIN.':'حصلت مشكلة، جرب تاني.';
+ }
+ busy=false;$('ask').disabled=false;$('q').value='';
+}
+$('ask').onclick=()=>askAI($('q').value.trim());
+$('q').onkeydown=e=>{if(e.key==='Enter')askAI($('q').value.trim())};
+document.querySelectorAll('.chips button').forEach(b=>b.onclick=()=>askAI(b.dataset.q));
+const FIREBASE_CONFIG={apiKey:'AIzaSyBu9P1yGaSz-A3cMgFwfKB39ZiiCSmffxA',authDomain:'apex-fit-8d951.firebaseapp.com',projectId:'apex-fit-8d951',appId:'1:1060351955529:web:8ff19e005eeb4b35e52598'};/* انسخها من Firebase */
+const AI_URL='https://apex-assistant.rooshdy15.workers.dev';/* رابط الـ Worker بعد ما تنشره */
+let user=null,au=null;
+const AE={'auth/invalid-credential':'الإيميل أو الباسورد غلط.','auth/wrong-password':'الإيميل أو الباسورد غلط.','auth/user-not-found':'مفيش حساب بالإيميل ده.','auth/email-already-in-use':'الإيميل ده مسجل قبل كده.','auth/weak-password':'الباسورد ضعيف، لازم 6 حروف أو أكتر.','auth/invalid-email':'الإيميل مش مكتوب صح.','auth/popup-closed-by-user':'اتقفلت نافذة الدخول.'};
+function uiAuth(){
+ $('authrow').style.display='flex';
+ $('who').textContent=user?(user.email||'مسجّل دخول'):'';
+ $('authbtn').textContent=user?'خروج':'تسجيل الدخول';
+ if(user)$('authcard').style.display='none';
+}
+async function doAuth(fn){
+ $('autherr').textContent='';
+ try{await fn()}catch(e){$('autherr').textContent=AE[e&&e.code]||'حصلت مشكلة، جرب تاني.'}
+}
+try{
+ if(window.firebase&&FIREBASE_CONFIG.apiKey){
+  firebase.initializeApp(FIREBASE_CONFIG);au=firebase.auth();
+  au.onAuthStateChanged(u=>{user=u;if(!u)proUntil=0;uiAuth();refreshSub();renderPro()});
+  $('authbtn').onclick=()=>{if(user)au.signOut();else $('authcard').style.display=$('authcard').style.display==='none'?'block':'none'};
+  $('signin').onclick=()=>doAuth(()=>au.signInWithEmailAndPassword($('em').value.trim(),$('pw').value));
+  $('signup').onclick=()=>doAuth(()=>au.createUserWithEmailAndPassword($('em').value.trim(),$('pw').value));
+  $('google').onclick=()=>doAuth(()=>au.signInWithPopup(new firebase.auth.GoogleAuthProvider()));
+ }
+}catch(e){}
+$('act2').onclick=()=>{if($('code').value.trim().toUpperCase()===CODE){ls.set('fc_pro','1');$('codeErr').textContent='';renderPro()}else $('codeErr').textContent='الكود غلط، راجعه وجرب تاني.'};
+let polls=0;
+function say(t){$('planmsg').textContent=t;$('planbar').textContent=t}
+async function refreshSub(){
+ if(!AI_URL||!user)return;
+ try{
+  const t=await user.getIdToken(),r=await fetch(AI_URL+'/status',{method:'POST',headers:{Authorization:'Bearer '+t}});
+  if(r.ok){const d=await r.json();proUntil=d.until||0;renderPro()}
+ }catch(e){}
+ if(location.search.indexOf('paid=1')>-1&&proUntil<=Date.now()&&polls++<8){
+  $('planmsg').textContent='بنأكد الدفع بتاعك، استنى ثواني...';
+  setTimeout(refreshSub,3000);
+ }
+}
+async function startCheckout(e){
+ e.preventDefault();
+ if(!AI_URL){if(PAY_URL)window.open(PAY_URL,'_blank','noopener');else say('رابط الاشتراك لسه متضافش.');return}
+ if(!user){$('authcard').style.display='block';$('authcard').scrollIntoView({behavior:'smooth'});say('سجّل دخول الأول عشان اشتراكك يتربط بحسابك.');return}
+ say('جاري تجهيز الدفع...');
+ try{
+  const t=await user.getIdToken();
+  const r=await fetch(AI_URL+'/checkout',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({plan:$('plansel').value})});
+  if(!r.ok)throw 0;
+  const d=await r.json();location.href=d.url;
+ }catch(x){say('حصلت مشكلة في تجهيز الدفع، جرب تاني.')}
+}
+$('sub').onclick=startCheckout;
+$('addlog').onclick=()=>{
+ const w=+$('lw').value,a=+$('lwa').value||0;if(!w||w<35||w>250)return;
+ const d=new Date().toISOString().slice(0,10),L=getLog().filter(x=>x.d!==d);L.push({d,w,a});L.sort((x,y)=>x.d<y.d?-1:1);
+ ls.set('fc_log',JSON.stringify(L));$('lw').value='';$('lwa').value='';renderLog();
+};
+$('dellog').onclick=()=>{const L=getLog();L.pop();ls.set('fc_log',JSON.stringify(L));renderLog()};
+$('go').onclick=()=>{
+  const m=$('sex').value==='m',age=+$('age').value,h=+$('h').value,w=+$('w').value,act=+$('act').value,goal=$('goal').value;
+  if(!age||!h||!w||age<15||age>90||h<120||h>220||w<35||w>250){$('err').textContent='راجع الأرقام: السن من 15 لـ 90، الطول من 120 لـ 220 سم، الوزن من 35 لـ 250 كجم.';return}
+  $('err').textContent='';
+  const bmi=w/((h/100)**2);
+  let bf=1.2*bmi+0.23*age-10.8*(m?1:0)-5.4;
+  bf=Math.max(m?4:10,Math.min(60,bf));
+  const fm=w*bf/100,lm=w-fm;
+  const bmr=10*w+6.25*h-5*age+(m?5:-161),tdee=bmr*act;
+  let target=goal==='lose'?tdee-500:goal==='gain'?tdee+300:tdee;
+  const floor=m?1500:1200;
+  let capped=false;
+  if(target<floor){target=floor;capped=true}
+  target=Math.round(target/10)*10;
+  const pro=Math.round(w*(goal==='lose'?2:goal==='gain'?1.8:1.6));
+  const fat=Math.round(target*0.27/9);
+  const carb=Math.max(0,Math.round((target-pro*4-fat*9)/4));
+  const idLo=18.5*(h/100)**2,idHi=24.9*(h/100)**2;
+  $('bf').textContent=n(bf,1)+'٪';$('bfcat').textContent=cat(bf,m);
+  $('bmi').textContent=n(bmi,1);$('fm').textContent=n(fm,1)+' كجم';$('lm').textContent=n(lm,1)+' كجم';
+  $('ideal').textContent=n(idLo)+' إلى '+n(idHi)+' كجم';
+  $('target').textContent=n(target);$('bmr').textContent=n(bmr);$('tdee').textContent=n(tdee);
+  $('pro').textContent=n(pro)+' جم';$('cf').textContent=n(carb)+' / '+n(fat)+' جم';
+  let eta='';
+  if(goal==='lose'){const wk=Math.max(0.2,(tdee-target)*7/7700);eta='النزول المتوقع حوالي '+n(wk,1)+' كجم في الأسبوع. نزول من 0.5 لـ 1 كجم أسبوعيًا آمن ومستدام.'+(capped?' السعرات اتحددت عند حد أدنى آمن، فمتنزلش عنه من غير متابعة طبية.':'')}
+  else if(goal==='gain'){eta='الزيادة المتوقعة حوالي 0.25 كجم في الأسبوع، وده معدل مناسب لزيادة عضلات أكتر من الدهون.'}
+  else eta='السعرات دي هتحافظ على وزنك الحالي تقريبًا.';
+  $('eta').textContent=eta;
+  const P={
+   lose:[['السبت','تمارين مقاومة: جسم كامل، 45 دقيقة'],['الأحد','مشي سريع أو كارديو خفيف، 40 إلى 60 دقيقة'],['الاثنين','تمارين مقاومة: جسم كامل، 45 دقيقة'],['الثلاثاء','راحة أو مشي خفيف'],['الأربعاء','تمارين مقاومة: جسم كامل، 45 دقيقة'],['الخميس','كارديو متقطع (HIIT) 20 دقيقة + مشي'],['الجمعة','راحة']],
+   keep:[['السبت','مقاومة: جزء علوي، 45 دقيقة'],['الأحد','كارديو متوسط، 30 دقيقة'],['الاثنين','مقاومة: جزء سفلي، 45 دقيقة'],['الثلاثاء','راحة'],['الأربعاء','مقاومة: جسم كامل، 45 دقيقة'],['الخميس','كارديو أو رياضة بتحبها، 30 دقيقة'],['الجمعة','راحة']],
+   gain:[['السبت','دفع: صدر وكتف وتراي'],['الأحد','سحب: ظهر وباي'],['الاثنين','رجل وبطن'],['الثلاثاء','راحة'],['الأربعاء','دفع: صدر وكتف وتراي'],['الخميس','سحب: ظهر وباي + رجل خفيف'],['الجمعة','راحة أو مشي خفيف']]
+  }[goal];
+  $('plan').innerHTML=P.map(r=>'<tr><th scope="row">'+r[0]+'</th><td>'+r[1]+'</td></tr>').join('');
+  const tips=['ابدأ كل تمرين بإحماء 5 دقائق، وزوّد الأوزان أو التكرارات تدريجيًا كل أسبوع.','اشرب مية كفاية ونام من 7 إلى 9 ساعات، النوم بيأثر على الدهون والعضلات.'];
+  if(bmi>=30||age>50)tips.unshift('لو مبتتمرنش من فترة طويلة أو عندك مشاكل في القلب أو المفاصل، استشر دكتور قبل ما تبدأ، وابدأ بالمشي.');
+  $('tips').innerHTML=tips.map(t=>'<li>'+t+'</li>').join('');
+  S={target,p:pro,c:carb,f:fat,goal,m,age,h,w,bf,tdee};if(!ls.get('fc_pref'))$('shp').value={lose:'ton',keep:'ath',gain:'bulk'}[goal];chat=[];$('msgs').innerHTML='';renderPro();
+  $('out').style.display='block';
+  $('out').scrollIntoView({behavior:'smooth',block:'start'});
+};
+</script>
+</body>
+</html>

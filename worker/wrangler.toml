@@ -1,0 +1,22 @@
+# Optional: deploy with `npx wrangler deploy` from this folder.
+# CAUTION: the Worker "apex-assistant" was first set up by hand in the Cloudflare dashboard.
+# If you deploy with wrangler, values in [vars] below replace the dashboard ones.
+# Secrets (set with `npx wrangler secret put NAME`) are NOT stored in this file:
+#   PAYMOB_SECRET_KEY, PAYMOB_HMAC
+name = "apex-assistant"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[ai]
+binding = "AI"
+
+[[kv_namespaces]]
+binding = "SUBS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"   # npx wrangler kv namespace create apex-subs
+
+[vars]
+ALLOWED_ORIGIN = "https://apex-recruitment-agency.github.io"
+SITE_URL = "https://apex-recruitment-agency.github.io/APEX-FIT/"
+FIREBASE_API_KEY = "REPLACE_WITH_FIREBASE_WEB_API_KEY"
+PAYMOB_PUBLIC_KEY = "REPLACE_WITH_PAYMOB_PUBLIC_KEY"
+PAYMOB_INTEGRATION_ID = "REPLACE_WITH_CARD_INTEGRATION_ID"

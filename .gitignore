@@ -1,0 +1,13 @@
+# secrets and local config: never commit
+.dev.vars
+.env
+*.key
+*.pem
+# Cloudflare / Node
+.wrangler/
+node_modules/
+# Android Studio
+*.iml
+.gradle/
+build/
+local.properties
