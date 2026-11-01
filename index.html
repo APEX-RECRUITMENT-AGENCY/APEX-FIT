@@ -214,7 +214,18 @@ svg.chart{width:100%;height:auto;display:block;margin-top:16px;border-radius:12p
 <div id="chart"></div><div class="tw"><table><tbody id="logt"></tbody></table></div>
 <button id="dellog" type="button" class="ghost">امسح آخر تسجيل</button>
 <p class="note">البيانات بتتحفظ على جهازك انت بس.</p></section>
-<section class="card" id="aicard"><span class="badge">PRO</span><h2>مساعدك الذكي</h2>
+<section class="card" id="appcard" style="display:none"><span class="badge">APP</span><h2>إعدادات تطبيق الموبايل</h2>
+<p class="note" style="margin-top:0">تحكم في قفل التطبيقات عشان تلتزم بتمارينك.</p>
+<div id="appstatus" class="note" style="margin-bottom:12px;white-space:pre-wrap"></div>
+<div class="grid">
+<button id="appperms" type="button" class="ghost">إعطاء الصلاحيات</button>
+<button id="apppick" type="button" class="ghost">اختيار التطبيقات</button>
+<button id="apptime" type="button" class="ghost">وقت التمرين</button>
+<button id="appex" type="button" class="ghost">نوع التمرين</button>
+</div>
+<button id="apptoggle" type="button">تشغيل القفل</button>
+<button id="apptest" type="button" class="ghost">تجربة شاشة القفل</button>
+</section>
 <p class="note" style="margin-top:0">اسأل عن أكلك وتمارينك وهيجاوبك حسب بياناتك اللي حسبناها.</p>
 <div class="chips"><button type="button" class="ghost" data-q="اقترح لي بدائل للرز والعيش بسعرات أقل">بدائل للرز والعيش</button><button type="button" class="ghost" data-q="إزاي أبدأ التمرين لو أنا مبتمرنش من فترة؟">أبدأ إزاي؟</button><button type="button" class="ghost" data-q="الوزن وقف ومبقاش ينزل، أعمل إيه؟">الوزن وقف</button></div>
 <div id="msgs" aria-live="polite"></div>
@@ -643,6 +654,22 @@ $('go').onclick=()=>{
   $('out').style.display='block';
   $('out').scrollIntoView({behavior:'smooth',block:'start'});
 };
+if(window.Android){
+ $('appcard').style.display='block';
+ window.updateAppStatus = function(){
+  if(window.Android.getStatus) {
+   $('appstatus').textContent=window.Android.getStatus();
+   $('apptoggle').textContent=window.Android.isEnabled() ? 'إيقاف القفل' : 'تشغيل القفل';
+  }
+ };
+ updateAppStatus();
+ $('appperms').onclick=()=>window.Android.openPerms();
+ $('apppick').onclick=()=>window.Android.pickApps();
+ $('apptime').onclick=()=>window.Android.pickTime();
+ $('appex').onclick=()=>window.Android.pickExercise();
+ $('apptoggle').onclick=()=>window.Android.toggleLock();
+ $('apptest').onclick=()=>window.Android.testLock();
+}
 </script>
 </body>
 </html>
